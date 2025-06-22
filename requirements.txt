@@ -1,6 +1,14 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-pydantic==2.5.0
-openai==1.3.0
-google-generativeai==0.3.2
-python-dotenv==1.0.0
+# Core dependencies for Google ADK agents
+google-adk>=0.1.0
+python-dotenv>=1.0.0
+
+# FastAPI server for agent bridge (optional - for advanced use)
+# Uncomment these if you want to run the real ADK server:
+# fastapi>=0.104.0
+# uvicorn>=0.24.0  
+# pydantic>=2.5.0
+
+# Installation:
+# Basic: pip install google-adk python-dotenv
+# Full:  pip install -r requirements.txt
+# Modern: pip install -e .

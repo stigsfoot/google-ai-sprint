@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import SafeComponentRenderer from '@/components/SafeComponentRenderer'
 
 interface GeneratedComponent {
   id: string
@@ -66,7 +67,7 @@ export default function GenerativeUIDashboard() {
       const result = await response.json()
       
       if (result.components) {
-        setComponents(result.components.map((comp: any, index: number) => ({
+        setComponents(result.components.map((comp: { agent: string; component_code: string; business_context: string; component_type: string }, index: number) => ({
           id: `comp-${index}`,
           agent_name: comp.agent,
           component_code: comp.component_code,
@@ -416,7 +417,10 @@ function EnhancedComponentWrapper({ component }: { component: GeneratedComponent
             
             <TabsContent value="preview" className="p-6 m-0">
               <div className="bg-gradient-to-br from-slate-50 to-white p-6 rounded-lg border-2 border-dashed border-gray-200">
-                <div dangerouslySetInnerHTML={{ __html: component.component_code }} />
+                <SafeComponentRenderer 
+                  componentCode={component.component_code}
+                  componentType={component.component_type}
+                />
               </div>
             </TabsContent>
             
@@ -520,7 +524,7 @@ function EmptyState({ onQuery }: { onQuery: (query: string) => void }) {
             <div className="text-3xl mb-3">{example.icon}</div>
             <h4 className="font-semibold text-lg mb-2">{example.title}</h4>
             <p className="text-gray-600 text-sm mb-3">{example.description}</p>
-            <p className="text-xs text-gray-500 italic">"{example.query}"</p>
+            <p className="text-xs text-gray-500 italic">&ldquo;{example.query}&rdquo;</p>
           </motion.div>
         ))}
       </div>

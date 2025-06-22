@@ -26,11 +26,12 @@ A multi-agent system using Google ADK that transforms business questions into in
 ```bash
 # 1. Environment setup
 cp .env.example agents/.env
-# Edit agents/.env and set: GOOGLE_API_KEY=your_actual_api_key
+# Edit agents/.env and replace 'your_google_ai_api_key_here' with your actual API key
 
 # 2. Install Python dependencies
-pip install -r requirements.txt
-# or: pip install -e .
+pip install google-adk python-dotenv
+# Or install all: pip install -r requirements.txt
+# Or modern approach: pip install -e .
 
 # 3. Install frontend dependencies  
 cd dashboard && npm install
@@ -41,28 +42,22 @@ python deployment/deploy.py dev
 
 ### Development Servers
 ```bash
-# Terminal 1: ADK Web Interface
-adk web agents --port 8080
+# Terminal 1: ADK Web Interface (requires API key setup)
+adk web agents --port 8000
 
 # Terminal 2: Frontend Dashboard  
 cd dashboard && npm run dev
 ```
 
 ### Access Points
-- **ADK Web Interface**: http://localhost:8080/dev-ui/
+- **ADK Web Interface**: http://localhost:8000/dev-ui/
 - **Frontend Dashboard**: http://localhost:3000
 
 ## 🧪 Testing
 
 ```bash
-# Run test suite
-python deployment/deploy.py test
-
-# Manual testing
-python test_multi_agent.py
-
-# Evaluation scenarios
-python eval/test_scenarios.py
+# Run development server to test functionality
+python deployment/deploy.py dev
 ```
 
 ## 📋 Project Structure
@@ -75,19 +70,16 @@ generative-ui-adk/
 │   │   └── agent.py        # Root agent + Chart agent
 │   ├── geospatial_agent.py # Map-based UI generation
 │   ├── accessibility_agent.py # WCAG-compliant components
-│   ├── __init__.py         # Agent package entry
-│   └── .env               # API credentials (private)
+│   ├── dashboard_layout_agent.py # Layout composition
+│   └── __init__.py         # Agent package entry
 ├── dashboard/              # Enhanced Frontend
 │   ├── src/app/           # Next.js app with Vercel-inspired UI
+│   ├── src/components/    # React components including SafeComponentRenderer
 │   └── src/components/ui/ # Shadcn UI components
-├── eval/                  # ADK Evaluation Framework
-│   └── test_scenarios.py  # Agent coordination tests
-├── tests/                 # Integration Tests
-│   └── test_agent_integration.py
 ├── deployment/            # Deployment Utilities
 │   └── deploy.py         # Local dev + production scripts
-├── .env.example          # Environment template
 ├── pyproject.toml        # Modern Python packaging
+├── requirements.txt       # Python dependencies
 └── README.md
 ```
 

@@ -11,12 +11,17 @@ interface ComponentResult {
   business_context: string
 }
 
-// Connect to real ADK Agent Server
-const ADK_SERVER_URL = process.env.ADK_SERVER_URL || 'http://localhost:8081'
+// Connect to real ADK Agent Server (currently unused during debugging)
+// const ADK_SERVER_URL = process.env.ADK_SERVER_URL || 'http://localhost:8081'
 
 async function callRealADKAgents(query: string): Promise<ComponentResult[]> {
-  console.log(`🎯 Calling real ADK agents: ${query}`)
+  console.log(`🎯 Skipping ADK agents for debugging - using simulation`)
   
+  // Temporarily skip ADK server and use simulation for debugging
+  return await simulateRootAgent(query)
+  
+  // Original ADK server code (commented out for debugging)
+  /*
   try {
     const response = await fetch(`${ADK_SERVER_URL}/api/analyze`, {
       method: 'POST',
@@ -41,6 +46,7 @@ async function callRealADKAgents(query: string): Promise<ComponentResult[]> {
     // Fallback to simulated response if ADK server unavailable
     return await simulateRootAgent(query)
   }
+  */
 }
 
 // Fallback simulation (kept as backup)
@@ -51,28 +57,37 @@ async function simulateRootAgent(query: string): Promise<ComponentResult[]> {
   
   // Simple keyword-based routing (mimics ADK agent delegation)
   if (query.toLowerCase().includes('trend') || query.toLowerCase().includes('sales')) {
-    // Simulate Chart Generation Agent - Trend Line
-    const component = `
-<div className="p-6 border-l-4 border-l-green-500 bg-white rounded-lg shadow-sm">
-  <div className="flex flex-row items-center space-y-0 pb-2">
-    <div className="h-6 w-6 text-green-600 mr-2">📈</div>
-    <h3 className="text-lg font-semibold">Sales Trend Analysis</h3>
-  </div>
-  <div className="mt-4">
-    <div className="h-48 bg-gradient-to-r from-green-100 to-blue-100 rounded-lg flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-3xl font-bold text-green-600">📊</div>
-        <p className="text-sm text-gray-600 mt-2">Trend visualization would render here</p>
-        <p className="text-xs text-gray-500">[Chart Data: Jan: 1200, Feb: 1350, Mar: 1580, Apr: 1420]</p>
-      </div>
-    </div>
-    <div className="mt-4 p-3 border-green-200 bg-green-50 rounded-lg">
-      <p className="text-green-800 text-sm">
-        📈 Sales showing strong upward trend with 23% growth over the period
-      </p>
-    </div>
-  </div>
-</div>`
+    // Simulate Chart Generation Agent - Interactive Tremor Line Chart (React.createElement format)
+    const component = `React.createElement(Card, { className: "p-6 bg-gradient-to-r from-green-50 to-blue-50" },
+  React.createElement("div", { className: "flex items-center space-x-2 mb-4" },
+    React.createElement(TrendingUp, { className: "h-6 w-6 text-green-600" }),
+    React.createElement(Text, { className: "text-lg font-semibold" }, "Sales Trend - Q4")
+  ),
+  React.createElement(LineChart, {
+    data: [
+      {"month": "Jan", "value": 1200},
+      {"month": "Feb", "value": 1350}, 
+      {"month": "Mar", "value": 1580},
+      {"month": "Apr", "value": 1420},
+      {"month": "May", "value": 1650},
+      {"month": "Jun", "value": 1780}
+    ],
+    index: "month",
+    categories: ["value"],
+    colors: ["green"],
+    className: "h-48 mt-4",
+    showLegend: false,
+    showGridLines: true,
+    curveType: "monotone"
+  }),
+  React.createElement("div", { className: "mt-4 flex items-center justify-between" },
+    React.createElement(Badge, { color: "green", size: "lg" }, "+23% Growth"),
+    React.createElement(Text, { className: "text-sm text-gray-600" }, "vs previous period")
+  ),
+  React.createElement("div", { className: "mt-4 p-3 bg-green-50 rounded-lg" },
+    React.createElement(Text, { className: "text-sm text-green-800" }, "Sales showing strong upward trend with 23% growth over the period")
+  )
+)`
     
     results.push({
       agent: 'chart_generation_agent',
@@ -83,18 +98,15 @@ async function simulateRootAgent(query: string): Promise<ComponentResult[]> {
   }
   
   if (query.toLowerCase().includes('metric') || query.toLowerCase().includes('kpi')) {
-    // Simulate Chart Generation Agent - Metric Card
-    const component = `
-<div className="p-6 text-center bg-white rounded-lg shadow-sm border">
-  <div className="pt-6">
-    <div className="text-4xl font-bold text-gray-900">$47.2K</div>
-    <p className="text-sm text-gray-600 mt-1">Monthly Revenue</p>
-    <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white">
-      +12.3%
-    </div>
-    <p className="text-xs text-gray-500 mt-2">Compared to previous month</p>
-  </div>
-</div>`
+    // Simulate Chart Generation Agent - Interactive Tremor Metric Card
+    const component = `React.createElement(Card, { className: "p-6 text-center max-w-xs" },
+  React.createElement(Flex, { alignItems: "start", className: "space-x-0", flexDirection: "col" },
+    React.createElement(Metric, { className: "text-4xl font-bold text-gray-900" }, "$47.2K"),
+    React.createElement(Text, { className: "text-sm text-gray-600 mt-1" }, "Monthly Revenue"),
+    React.createElement(Badge, { color: "green", size: "lg", className: "mt-2" }, "+12.3%"),
+    React.createElement(Text, { className: "text-xs text-gray-500 mt-2" }, "Compared to previous month")
+  )
+)`
     
     results.push({
       agent: 'chart_generation_agent',
@@ -105,24 +117,32 @@ async function simulateRootAgent(query: string): Promise<ComponentResult[]> {
   }
   
   if (query.toLowerCase().includes('compare') || query.toLowerCase().includes('comparison')) {
-    // Simulate Chart Generation Agent - Comparison Bar
-    const component = `
-<div className="p-6 bg-white rounded-lg shadow-sm border">
-  <div className="flex items-center mb-4">
-    <div className="h-6 w-6 text-blue-600 mr-2">📊</div>
-    <h3 className="text-lg font-semibold">Product Performance Comparison</h3>
-  </div>
-  <div className="h-48 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-    <div className="text-center">
-      <div className="text-3xl font-bold text-blue-600">📊</div>
-      <p className="text-sm text-gray-600 mt-2">Bar chart visualization would render here</p>
-      <p className="text-xs text-gray-500">[Data: Product A: 2400, Product B: 1800, Product C: 3200, Product D: 1600]</p>
-    </div>
-  </div>
-  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-    <p className="text-sm text-blue-800">Product C leads with 3.2K units, 33% higher than average</p>
-  </div>
-</div>`
+    // Simulate Chart Generation Agent - Interactive Tremor Bar Chart
+    const component = `React.createElement(Card, { className: "p-6" },
+  React.createElement(Flex, { alignItems: "center", className: "space-x-2 mb-4" },
+    React.createElement(BarChart3, { className: "h-6 w-6 text-blue-600" }),
+    React.createElement(Text, { className: "text-lg font-semibold" }, "Product Performance Comparison")
+  ),
+  React.createElement(BarChart, {
+    data: [
+      {"category": "Product A", "value": 2400}, 
+      {"category": "Product B", "value": 1800}, 
+      {"category": "Product C", "value": 3200}, 
+      {"category": "Product D", "value": 1600}
+    ],
+    index: "category",
+    categories: ["value"],
+    colors: ["blue"],
+    className: "h-48 mt-4",
+    showLegend: false,
+    showGridLines: true,
+    showYAxis: true,
+    showXAxis: true
+  }),
+  React.createElement("div", { className: "mt-4 p-3 bg-blue-50 rounded-lg" },
+    React.createElement(Text, { className: "text-sm text-blue-800" }, "Product C leads with 3.2K units, 33% higher than average")
+  )
+)`
     
     results.push({
       agent: 'chart_generation_agent',
@@ -132,19 +152,91 @@ async function simulateRootAgent(query: string): Promise<ComponentResult[]> {
     })
   }
   
+  // Geospatial agent simulation
+  if (query.toLowerCase().includes('regional') || query.toLowerCase().includes('territory') || query.toLowerCase().includes('map') || query.toLowerCase().includes('location') || query.toLowerCase().includes('geospatial')) {
+    // Simulate regional heatmap
+    const heatmapComponent = `React.createElement(Card, { className: "p-6 border-l-4 border-l-blue-500" },
+  React.createElement("div", { className: "flex items-center space-x-2 mb-4" },
+    React.createElement(MapPin, { className: "h-6 w-6 text-blue-600" }),
+    React.createElement(Text, { className: "text-lg font-semibold" }, "Regional Sales Volume Analysis")
+  ),
+  React.createElement("div", { className: "relative bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6" },
+    React.createElement(MapContainer, {
+      center: [39.8283, -98.5795],
+      zoom: 4,
+      style: { height: "300px", width: "100%" },
+      className: "rounded-lg z-0"
+    },
+      React.createElement(TileLayer, {
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution: "© OpenStreetMap contributors"
+      }),
+      React.createElement(CircleMarker, {
+        center: [34.0522, -118.2437],
+        radius: 20,
+        fillColor: "#ef4444",
+        color: "#dc2626",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.7
+      },
+        React.createElement(Popup, {}, "California: $45,000")
+      ),
+      React.createElement(CircleMarker, {
+        center: [31.9686, -99.9018],
+        radius: 15,
+        fillColor: "#f97316",
+        color: "#ea580c",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.7
+      },
+        React.createElement(Popup, {}, "Texas: $32,000")
+      ),
+      React.createElement(CircleMarker, {
+        center: [40.7589, -73.9851],
+        radius: 13,
+        fillColor: "#eab308",
+        color: "#ca8a04",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.7
+      },
+        React.createElement(Popup, {}, "New York: $28,000")
+      )
+    )
+  ),
+  React.createElement("div", { className: "mt-4 grid grid-cols-4 gap-2 text-xs" },
+    React.createElement("div", { className: "bg-red-500 text-white p-2 rounded text-center" }, "High ($40k+)"),
+    React.createElement("div", { className: "bg-orange-500 text-white p-2 rounded text-center" }, "Medium ($25-40k)"),
+    React.createElement("div", { className: "bg-yellow-500 text-white p-2 rounded text-center" }, "Low ($15-25k)"),
+    React.createElement("div", { className: "bg-green-500 text-white p-2 rounded text-center" }, "New Markets")
+  ),
+  React.createElement("div", { className: "mt-4 p-3 bg-blue-50 rounded-lg" },
+    React.createElement(Text, { className: "text-sm text-blue-800" }, "📍 California leads with 40% of total sales"),
+    React.createElement(Text, { className: "text-xs text-blue-600 mt-1" }, "Data: California: 45000, Texas: 32000, New York: 28000")
+  )
+)`
+
+    results.push({
+      agent: 'geospatial_agent',
+      component_type: 'regional_heatmap',
+      component_code: heatmapComponent,
+      business_context: 'Regional sales performance with interactive map visualization'
+    })
+  }
+  
   // If no specific keywords matched, provide a default metric card
   if (results.length === 0) {
-    const component = `
-<div className="p-6 text-center bg-white rounded-lg shadow-sm border">
-  <div className="pt-6">
-    <div className="text-4xl font-bold text-gray-900">🤖</div>
-    <p className="text-sm text-gray-600 mt-1">General Business Query</p>
-    <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500 text-white">
-      Processed
-    </div>
-    <p className="text-xs text-gray-500 mt-2">Agent understood: "${query}"</p>
-  </div>
-</div>`
+    const escapedQuery = query.replace(/"/g, '\\"')
+    const component = `React.createElement(Card, { className: "p-6 text-center" },
+  React.createElement(Flex, { alignItems: "center", flexDirection: "col", className: "space-y-3" },
+    React.createElement("div", { className: "text-4xl" }, "🤖"),
+    React.createElement(Text, { className: "text-sm text-gray-600" }, "General Business Query"),
+    React.createElement(Badge, { color: "blue", size: "lg" }, "Processed"),
+    React.createElement(Text, { className: "text-xs text-gray-500" }, "Agent understood: ${escapedQuery}")
+  )
+)`
     
     results.push({
       agent: 'chart_generation_agent',

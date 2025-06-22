@@ -11,8 +11,12 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Environment files
-.env*
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Editor folders
 .vscode/

@@ -11,17 +11,13 @@ interface ComponentResult {
   business_context: string
 }
 
-// Connect to real ADK Agent Server (currently unused during debugging)
-// const ADK_SERVER_URL = process.env.ADK_SERVER_URL || 'http://localhost:8081'
+// Connect to real ADK Agent Server
+const ADK_SERVER_URL = process.env.ADK_SERVER_URL || 'http://localhost:8081'
 
 async function callRealADKAgents(query: string): Promise<ComponentResult[]> {
-  console.log(`🎯 Skipping ADK agents for debugging - using simulation`)
+  console.log(`🎯 Using real ADK agents for: ${query}`)
   
-  // Temporarily skip ADK server and use simulation for debugging
-  return await simulateRootAgent(query)
-  
-  // Original ADK server code (commented out for debugging)
-  /*
+  // Use real ADK server
   try {
     const response = await fetch(`${ADK_SERVER_URL}/api/analyze`, {
       method: 'POST',
@@ -46,7 +42,6 @@ async function callRealADKAgents(query: string): Promise<ComponentResult[]> {
     // Fallback to simulated response if ADK server unavailable
     return await simulateRootAgent(query)
   }
-  */
 }
 
 // Fallback simulation (kept as backup)
@@ -63,23 +58,27 @@ async function simulateRootAgent(query: string): Promise<ComponentResult[]> {
     React.createElement(TrendingUp, { className: "h-6 w-6 text-green-600" }),
     React.createElement(Text, { className: "text-lg font-semibold" }, "Sales Trend - Q4")
   ),
-  React.createElement(LineChart, {
-    data: [
-      {"month": "Jan", "value": 1200},
-      {"month": "Feb", "value": 1350}, 
-      {"month": "Mar", "value": 1580},
-      {"month": "Apr", "value": 1420},
-      {"month": "May", "value": 1650},
-      {"month": "Jun", "value": 1780}
-    ],
-    index: "month",
-    categories: ["value"],
-    colors: ["green"],
-    className: "h-48 mt-4",
-    showLegend: false,
-    showGridLines: true,
-    curveType: "monotone"
-  }),
+  React.createElement("div", { className: "mt-4" },
+    React.createElement(LineChart, {
+      data: [
+        {"month": "Jan", "value": 1200},
+        {"month": "Feb", "value": 1350}, 
+        {"month": "Mar", "value": 1580},
+        {"month": "Apr", "value": 1420},
+        {"month": "May", "value": 1650},
+        {"month": "Jun", "value": 1780}
+      ],
+      index: "month",
+      categories: ["value"],
+      colors: ["green"],
+      className: "h-64",
+      showLegend: false,
+      showGridLines: true,
+      curveType: "monotone",
+      yAxisLabel: "Sales ($)",
+      autoMinValue: true
+    })
+  ),
   React.createElement("div", { className: "mt-4 flex items-center justify-between" },
     React.createElement(Badge, { color: "green", size: "lg" }, "+23% Growth"),
     React.createElement(Text, { className: "text-sm text-gray-600" }, "vs previous period")

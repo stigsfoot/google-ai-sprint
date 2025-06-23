@@ -1,9 +1,8 @@
 """
 Geospatial Agent - Specialized UI generation for location-based components
 Generates map heatmaps, location metrics, and territory analysis visualizations
+Simplified for demo without full ADK package
 """
-from google.adk.agents import Agent
-from google.adk.tools import FunctionTool
 import json
 import os
 from dotenv import load_dotenv
@@ -16,90 +15,94 @@ def create_regional_heatmap_tool(regions: str = 'US States', metric_name: str = 
     """Generate a regional heatmap component with interactive Leaflet map."""
     sample_regions = '{"California": 45000, "Texas": 32000, "New York": 28000, "Florida": 22000, "Illinois": 18000}'
     
-    return f'''React.createElement(Card, {{ className: "p-6 border-l-4 border-l-blue-500" }},
-  React.createElement("div", {{ className: "flex items-center space-x-2 mb-4" }},
-    React.createElement(MapPin, {{ className: "h-6 w-6 text-blue-600" }}),
-    React.createElement(Text, {{ className: "text-lg font-semibold" }}, "Regional {metric_name} Analysis")
-  ),
-  React.createElement("div", {{ className: "relative bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6" }},
-    React.createElement(MapContainer, {{
-      center: [39.8283, -98.5795],
-      zoom: 4,
-      style: {{ height: "300px", width: "100%" }},
-      className: "rounded-lg z-0"
-    }},
-      React.createElement(TileLayer, {{
-        url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
-        attribution: "© OpenStreetMap contributors"
-      }}),
-      React.createElement(CircleMarker, {{
-        center: [34.0522, -118.2437],
-        radius: 20,
-        fillColor: "#ef4444",
-        color: "#dc2626",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "California: $45,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [31.9686, -99.9018],
-        radius: 15,
-        fillColor: "#f97316",
-        color: "#ea580c",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "Texas: $32,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [40.7589, -73.9851],
-        radius: 13,
-        fillColor: "#eab308",
-        color: "#ca8a04",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "New York: $28,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [27.7663, -82.6404],
-        radius: 11,
-        fillColor: "#22c55e",
-        color: "#16a34a",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "Florida: $22,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [40.3363, -89.0022],
-        radius: 9,
-        fillColor: "#3b82f6",
-        color: "#2563eb",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "Illinois: $18,000")
-      )
-    )
-  ),
-  React.createElement("div", {{ className: "mt-4 grid grid-cols-4 gap-2 text-xs" }},
-    React.createElement("div", {{ className: "bg-red-500 text-white p-2 rounded text-center" }}, "High ($40k+)"),
-    React.createElement("div", {{ className: "bg-orange-500 text-white p-2 rounded text-center" }}, "Medium ($25-40k)"),
-    React.createElement("div", {{ className: "bg-yellow-500 text-white p-2 rounded text-center" }}, "Low ($15-25k)"),
-    React.createElement("div", {{ className: "bg-green-500 text-white p-2 rounded text-center" }}, "New Markets")
-  ),
-  React.createElement("div", {{ className: "mt-4 p-3 bg-blue-50 rounded-lg" }},
-    React.createElement(Text, {{ className: "text-sm text-blue-800" }}, "📍 {insight}"),
-    React.createElement(Text, {{ className: "text-xs text-blue-600 mt-1" }}, "Data: {sample_regions}")
-  )
-)'''
+    return f'''<Card className="p-6 border-l-4 border-l-blue-500">
+  <CardHeader>
+    <div className="flex items-center space-x-2">
+      <MapPin className="h-6 w-6 text-blue-600" />
+      <CardTitle className="text-lg">Regional {metric_name} Analysis</CardTitle>
+    </div>
+  </CardHeader>
+  <CardContent>
+    <div className="relative bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6">
+      <MapContainer
+        center={{[39.8283, -98.5795]}}
+        zoom={{4}}
+        style={{{{ height: "300px", width: "100%" }}}}
+        className="rounded-lg z-0"
+      >
+        <TileLayer
+          url="https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png"
+          attribution="© OpenStreetMap contributors"
+        />
+        <CircleMarker
+          center={{[34.0522, -118.2437]}}
+          radius={{20}}
+          fillColor="#ef4444"
+          color="#dc2626"
+          weight={{2}}
+          opacity={{1}}
+          fillOpacity={{0.7}}
+        >
+          <Popup>California: $45,000</Popup>
+        </CircleMarker>
+        <CircleMarker
+          center={{[31.9686, -99.9018]}}
+          radius={{15}}
+          fillColor="#f97316"
+          color="#ea580c"
+          weight={{2}}
+          opacity={{1}}
+          fillOpacity={{0.7}}
+        >
+          <Popup>Texas: $32,000</Popup>
+        </CircleMarker>
+        <CircleMarker
+          center={{[40.7589, -73.9851]}}
+          radius={{13}}
+          fillColor="#eab308"
+          color="#ca8a04"
+          weight={{2}}
+          opacity={{1}}
+          fillOpacity={{0.7}}
+        >
+          <Popup>New York: $28,000</Popup>
+        </CircleMarker>
+        <CircleMarker
+          center={{[27.7663, -82.6404]}}
+          radius={{11}}
+          fillColor="#22c55e"
+          color="#16a34a"
+          weight={{2}}
+          opacity={{1}}
+          fillOpacity={{0.7}}
+        >
+          <Popup>Florida: $22,000</Popup>
+        </CircleMarker>
+        <CircleMarker
+          center={{[40.3363, -89.0022]}}
+          radius={{9}}
+          fillColor="#3b82f6"
+          color="#2563eb"
+          weight={{2}}
+          opacity={{1}}
+          fillOpacity={{0.7}}
+        >
+          <Popup>Illinois: $18,000</Popup>
+        </CircleMarker>
+      </MapContainer>
+    </div>
+    <div className="mt-4 grid grid-cols-4 gap-2 text-xs">
+      <div className="bg-red-500 text-white p-2 rounded text-center">High ($40k+)</div>
+      <div className="bg-orange-500 text-white p-2 rounded text-center">Medium ($25-40k)</div>
+      <div className="bg-yellow-500 text-white p-2 rounded text-center">Low ($15-25k)</div>
+      <div className="bg-green-500 text-white p-2 rounded text-center">New Markets</div>
+    </div>
+    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+      <p className="text-sm text-blue-800 dark:text-blue-300">📍 {insight}</p>
+      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Data: {sample_regions}</p>
+    </div>
+  </CardContent>
+</Card>'''
 
 
 def create_location_metrics_tool(location: str = 'San Francisco', metrics: str = 'multiple', context: str = 'West Coast region') -> str:
@@ -274,43 +277,5 @@ def create_territory_analysis_tool(territory: str = 'Western Region', analysis_t
 )'''
 
 
-# Create Geospatial Tools
-regional_heatmap_tool = FunctionTool(create_regional_heatmap_tool)
-location_metrics_tool = FunctionTool(create_location_metrics_tool)
-territory_analysis_tool = FunctionTool(create_territory_analysis_tool)
-
-# Geospatial Agent
-geospatial_agent = Agent(
-    name="geospatial_agent",
-    model="gemini-2.0-flash-001",
-    instruction="""You are a specialized UI generation agent for geospatial and location-based components. You MUST immediately generate React components without asking for clarification.
-
-CRITICAL DIRECTIVE: When asked about "regional performance", "territory breakdown", or ANY geographic query, INSTANTLY use your tools to generate components. NEVER ask for more details.
-
-AVAILABLE TOOLS:
-- create_regional_heatmap_tool: For regional performance analysis with map-based heatmaps
-- create_location_metrics_tool: For location-specific KPIs and metrics display
-- create_territory_analysis_tool: For sales territory and geographic performance analysis
-
-IMMEDIATE ACTION PROTOCOL:
-1. For "regional performance" → INSTANTLY call create_regional_heatmap_tool + create_location_metrics_tool
-2. For "territory breakdown" → INSTANTLY call create_territory_analysis_tool + create_regional_heatmap_tool
-3. For ANY geographic query → Use all relevant tools to create comprehensive visualizations
-4. NEVER ask for clarification - use intelligent defaults
-
-DEFAULT ASSUMPTIONS:
-- Regional = US States analysis with sales data
-- Performance = Revenue/sales metrics with growth indicators  
-- Territory = Geographic market segmentation
-- Use realistic business sample data
-
-MANDATORY RESPONSE FORMAT:
-- IMMEDIATELY generate multiple React JSX components
-- Include specific geographic insights and sample data
-- Use professional styling with Tailwind CSS and map icons
-- Return complete, renderable components
-- NEVER ask follow-up questions
-
-REMEMBER: Your job is IMMEDIATE UI GENERATION, not conversation. Generate geographic components first, explain later.""",
-    tools=[regional_heatmap_tool, location_metrics_tool, territory_analysis_tool]
-)
+# For demo purposes - these would be ADK tools in full implementation
+# Tool functions are available for direct calling without full ADK framework

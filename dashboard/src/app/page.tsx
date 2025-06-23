@@ -9,6 +9,9 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import SafeComponentRenderer from '@/components/SafeComponentRenderer'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { QueryHistory } from '@/components/QueryHistory'
+import { EnhancedLoadingState } from '@/components/EnhancedLoadingState'
 
 interface GeneratedComponent {
   id: string
@@ -29,6 +32,11 @@ export default function GenerativeUIDashboard() {
   const [components, setComponents] = useState<GeneratedComponent[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [query, setQuery] = useState('')
+  const [performanceMetrics, setPerformanceMetrics] = useState<{
+    processingTime: string
+    componentCount: number
+    agentTrace: string[]
+  } | null>(null)
   const [agentStatuses, setAgentStatuses] = useState<AgentStatus[]>([
     { name: 'Chart Agent', status: 'idle', icon: '📊', color: 'blue' },
     { name: 'Geospatial Agent', status: 'idle', icon: '🗺️', color: 'green' },
@@ -38,6 +46,9 @@ export default function GenerativeUIDashboard() {
   const handleBusinessQuery = async (inputQuery: string) => {
     setIsLoading(true)
     setComponents([])
+    setPerformanceMetrics(null)
+    
+    const startTime = Date.now()
     
     // Simulate agent activation with delays
     const activateAgents = () => {
@@ -78,6 +89,19 @@ export default function GenerativeUIDashboard() {
         setAgentStatuses(prev => prev.map(agent => 
           ({ ...agent, status: 'complete' as const })
         ))
+
+        // Set performance metrics
+        const endTime = Date.now()
+        setPerformanceMetrics({
+          processingTime: `${((endTime - startTime) / 1000).toFixed(1)}s`,
+          componentCount: result.components.length,
+          agentTrace: result.agent_trace || []
+        })
+
+        // Add to query history
+        if ((window as any).addQueryToHistory) {
+          (window as any).addQueryToHistory(inputQuery, result.components.length)
+        }
       }
     } catch (error) {
       console.error('Error querying agents:', error)
@@ -102,12 +126,12 @@ export default function GenerativeUIDashboard() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50"
+          className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-50 transition-colors"
         >
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -128,7 +152,10 @@ export default function GenerativeUIDashboard() {
                 </motion.div>
               </div>
               
-              <AgentStatusBar agents={agentStatuses} />
+              <div className="flex items-center space-x-3">
+                <AgentStatusBar agents={agentStatuses} />
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </motion.div>
@@ -141,10 +168,10 @@ export default function GenerativeUIDashboard() {
             transition={{ delay: 0.1 }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-gray-100 dark:via-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
               Ask. Generate. Visualize.
             </h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto transition-colors">
               Transform business questions into interactive UI components using our specialized AI agents
             </p>
             
@@ -156,29 +183,63 @@ export default function GenerativeUIDashboard() {
             />
           </motion.div>
 
-          {/* Loading State */}
+          {/* Query History */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <QueryHistory 
+              onSelectQuery={(selectedQuery) => {
+                setQuery(selectedQuery)
+                handleBusinessQuery(selectedQuery)
+              }}
+              currentQuery={query}
+            />
+          </motion.div>
+
+          {/* Enhanced Loading State */}
           <AnimatePresence>
             {isLoading && (
+              <EnhancedLoadingState isLoading={isLoading} query={query} />
+            )}
+          </AnimatePresence>
+
+          {/* Performance Metrics */}
+          <AnimatePresence>
+            {performanceMetrics && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center justify-center py-16"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8"
               >
-                <div className="text-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-6"
-                  />
-                  <motion.p 
-                    animate={{ opacity: [1, 0.5, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="text-gray-600 text-lg"
-                  >
-                    🤖 Agents are crafting your components...
-                  </motion.p>
-                </div>
+                <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-800">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-2xl">⚡</div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-green-800 dark:text-green-300">Generation Complete</h3>
+                          <p className="text-xs text-green-600 dark:text-green-400">Components ready for use</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-6 text-sm">
+                        <div className="text-center">
+                          <div className="font-bold text-green-800 dark:text-green-300">{performanceMetrics.processingTime}</div>
+                          <div className="text-xs text-green-600 dark:text-green-400">Processing Time</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-green-800 dark:text-green-300">{performanceMetrics.componentCount}</div>
+                          <div className="text-xs text-green-600 dark:text-green-400">Components</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-green-800 dark:text-green-300">{performanceMetrics.agentTrace.length}</div>
+                          <div className="text-xs text-green-600 dark:text-green-400">Agent Steps</div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
           </AnimatePresence>
@@ -225,29 +286,29 @@ export default function GenerativeUIDashboard() {
 function AgentStatusBar({ agents }: { agents: AgentStatus[] }) {
   const getStatusClasses = (agent: AgentStatus) => {
     if (agent.status === 'idle') {
-      return 'bg-gray-100 text-gray-600'
+      return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
     }
     
     const colorMap = {
       blue: {
-        thinking: 'bg-blue-100 text-blue-700',
-        generating: 'bg-blue-200 text-blue-800'
+        thinking: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+        generating: 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
       },
       green: {
-        thinking: 'bg-green-100 text-green-700',
-        generating: 'bg-green-200 text-green-800'
+        thinking: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+        generating: 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
       },
       purple: {
-        thinking: 'bg-purple-100 text-purple-700',
-        generating: 'bg-purple-200 text-purple-800'
+        thinking: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+        generating: 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200'
       }
     }
     
     if (agent.status === 'complete') {
-      return 'bg-green-100 text-green-700'
+      return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
     }
     
-    return colorMap[agent.color as keyof typeof colorMap]?.[agent.status as 'thinking' | 'generating'] || 'bg-gray-100 text-gray-600'
+    return colorMap[agent.color as keyof typeof colorMap]?.[agent.status as 'thinking' | 'generating'] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   }
   
   const getDotClasses = (agent: AgentStatus) => {
@@ -319,7 +380,7 @@ function BusinessQueryInput({
       whileHover={{ scale: 1.01 }}
       className="max-w-4xl mx-auto"
     >
-      <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+      <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-colors">
         <CardContent className="p-6">
           <form onSubmit={handleSubmit}>
             <div className="flex gap-4">
@@ -329,10 +390,10 @@ function BusinessQueryInput({
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                   placeholder="Ask about trends, regions, accessibility... (e.g., 'Show regional sales with high contrast charts')"
-                  className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
+                  className="w-full px-6 py-4 text-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   disabled={isLoading}
                 />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
                   <span className="text-sm">⌘ + Enter</span>
                 </div>
               </div>
@@ -373,8 +434,8 @@ function EnhancedComponentWrapper({ component }: { component: GeneratedComponent
       whileHover={{ scale: 1.01 }}
       className="max-w-6xl mx-auto"
     >
-      <Card className="border-0 shadow-xl bg-white overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b">
+      <Card className="border-0 shadow-xl bg-white dark:bg-gray-800 overflow-hidden transition-colors">
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600 transition-colors">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <motion.div
@@ -387,8 +448,8 @@ function EnhancedComponentWrapper({ component }: { component: GeneratedComponent
                  component.agent_name.includes('accessibility') ? '♿' : '🤖'}
               </motion.div>
               <div>
-                <CardTitle className="text-lg">Generated Component</CardTitle>
-                <p className="text-sm text-gray-600">{component.business_context}</p>
+                <CardTitle className="text-lg dark:text-white">Generated Component</CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{component.business_context}</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -416,7 +477,7 @@ function EnhancedComponentWrapper({ component }: { component: GeneratedComponent
             </TabsList>
             
             <TabsContent value="preview" className="p-6 m-0">
-              <div className="bg-gradient-to-br from-slate-50 to-white p-6 rounded-lg border-2 border-dashed border-gray-200">
+              <div className="bg-gradient-to-br from-slate-50 to-white dark:from-gray-700 dark:to-gray-600 p-6 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-500 transition-colors">
                 <SafeComponentRenderer 
                   componentCode={component.component_code}
                   componentType={component.component_type}
@@ -497,10 +558,10 @@ function EmptyState({ onQuery }: { onQuery: (query: string) => void }) {
       >
         🚀
       </motion.div>
-      <h3 className="text-3xl font-bold mb-4 text-gray-900">
+      <h3 className="text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100 transition-colors">
         Ready to Generate UI Components
       </h3>
-      <p className="text-gray-600 mb-12 text-lg">
+      <p className="text-gray-600 dark:text-gray-300 mb-12 text-lg transition-colors">
         Choose an example below or ask your own business intelligence question
       </p>
       
@@ -514,17 +575,17 @@ function EmptyState({ onQuery }: { onQuery: (query: string) => void }) {
             whileHover={{ scale: 1.02, y: -5 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onQuery(example.query)}
-            className={`p-6 border-2 rounded-xl cursor-pointer transition-all bg-white hover:shadow-lg ${
-              example.color === 'blue' ? 'border-blue-200 hover:border-blue-300' :
-              example.color === 'green' ? 'border-green-200 hover:border-green-300' :
-              example.color === 'purple' ? 'border-purple-200 hover:border-purple-300' :
-              'border-orange-200 hover:border-orange-300'
+            className={`p-6 border-2 rounded-xl cursor-pointer transition-all bg-white dark:bg-gray-800 hover:shadow-lg dark:hover:shadow-gray-900/25 ${
+              example.color === 'blue' ? 'border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600' :
+              example.color === 'green' ? 'border-green-200 hover:border-green-300 dark:border-green-700 dark:hover:border-green-600' :
+              example.color === 'purple' ? 'border-purple-200 hover:border-purple-300 dark:border-purple-700 dark:hover:border-purple-600' :
+              'border-orange-200 hover:border-orange-300 dark:border-orange-700 dark:hover:border-orange-600'
             }`}
           >
             <div className="text-3xl mb-3">{example.icon}</div>
-            <h4 className="font-semibold text-lg mb-2">{example.title}</h4>
-            <p className="text-gray-600 text-sm mb-3">{example.description}</p>
-            <p className="text-xs text-gray-500 italic">&ldquo;{example.query}&rdquo;</p>
+            <h4 className="font-semibold text-lg mb-2 dark:text-white">{example.title}</h4>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">{example.description}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">&ldquo;{example.query}&rdquo;</p>
           </motion.div>
         ))}
       </div>

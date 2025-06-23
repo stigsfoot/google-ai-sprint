@@ -1,6 +1,8 @@
 """
 Generative UI agent package
+Simplified for demo
 """
-from .agent import root_agent, chart_generation_agent
+# Commenting out for demo
+# from .agent import root_agent, chart_generation_agent
 
-__all__ = ['root_agent', 'chart_generation_agent']
+__all__ = []

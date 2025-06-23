@@ -1,8 +1,9 @@
 """
 Generative UI Multi-Agent System
-ADK-compliant agent package structure
+Simplified structure for demo
 """
-from .generative_ui.agent import root_agent
+# Import mock root agent for ADK Web UI compatibility
+from .agent import root_agent
 
-# ADK discovery: expose root_agent for web interface
+# Expose root agent for ADK discovery
 __all__ = ['root_agent']

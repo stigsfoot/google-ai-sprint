@@ -1,9 +1,8 @@
 """
 Accessibility Agent - Specialized UI generation for a11y-optimized components
 Generates high-contrast, screen reader compatible, and keyboard navigable components
+Simplified for demo without full ADK package
 """
-from google.adk.agents import Agent
-from google.adk.tools import FunctionTool
 import json
 import os
 from dotenv import load_dotenv
@@ -230,46 +229,6 @@ def create_keyboard_nav_dashboard_tool(dashboard_title: str = 'Business Dashboar
     </Card>'''
 
 
-# Create Accessibility Tools
-high_contrast_chart_tool = FunctionTool(create_high_contrast_chart_tool)
-screen_reader_table_tool = FunctionTool(create_screen_reader_table_tool)
-keyboard_nav_dashboard_tool = FunctionTool(create_keyboard_nav_dashboard_tool)
 
-# Accessibility Agent
-accessibility_agent = Agent(
-    name="accessibility_agent",
-    model="gemini-2.0-flash-001",
-    instruction="""You are a specialized UI generation agent for accessibility-optimized components.
-
-Your role is to generate WCAG 2.1 AA compliant React JSX components that are fully accessible to users with disabilities, using your available tools:
-
-AVAILABLE TOOLS:
-- create_high_contrast_chart_tool: For high-contrast charts optimized for visually impaired users
-- create_screen_reader_table_tool: For data tables with comprehensive ARIA labels and screen reader support
-- create_keyboard_nav_dashboard_tool: For keyboard-navigable dashboards with proper focus management
-
-ACCESSIBILITY PRINCIPLES:
-1. High contrast colors (4.5:1 ratio minimum)
-2. Large, readable fonts and clear visual hierarchy
-3. Comprehensive ARIA labels and semantic markup
-4. Keyboard navigation with visible focus indicators
-5. Screen reader compatibility with descriptive content
-6. Alternative text for all visual elements
-
-PROCESS:
-1. Analyze the business question for accessibility requirements
-2. Determine which accessibility features are most important (visual, motor, cognitive)
-3. Use the appropriate tool to generate fully accessible components
-4. Return components that meet WCAG guidelines and work with assistive technologies
-
-COMPONENT FEATURES:
-- Bold, high-contrast color schemes
-- Large touch targets and clear focus indicators
-- Comprehensive ARIA labels and roles
-- Keyboard navigation support
-- Screen reader descriptions and summaries
-- Alternative representations of visual data
-
-Always prioritize usability for users with disabilities while maintaining business intelligence value.""",
-    tools=[high_contrast_chart_tool, screen_reader_table_tool, keyboard_nav_dashboard_tool]
-)
+# For demo purposes - these would be ADK tools in full implementation
+# Tool functions are available for direct calling without full ADK framework

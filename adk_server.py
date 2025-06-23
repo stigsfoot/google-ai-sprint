@@ -20,10 +20,16 @@ load_dotenv('agents/.env')
 sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
 
 try:
-    from agents.generative_ui.agent import root_agent
-    print("✅ ADK agents loaded successfully")
+    # Import the tool functions directly for demo
+    from agents.generative_ui.agent import create_sales_trend_card, create_metric_card, create_comparison_bar_chart
+    from agents.geospatial_agent import create_regional_heatmap_tool, create_location_metrics_tool
+    from agents.accessibility_agent import create_high_contrast_chart_tool, create_screen_reader_table_tool
+    print("✅ ADK agent tools loaded successfully")
+    root_agent = True  # Flag to indicate tools are available
 except ImportError as e:
-    print(f"❌ Failed to load ADK agents: {e}")
+    print(f"❌ Failed to load ADK agent tools: {e}")
+    import traceback
+    traceback.print_exc()
     root_agent = None
 
 # FastAPI app for serving ADK agents
@@ -77,10 +83,8 @@ async def analyze_query(request: QueryRequest):
     try:
         print(f"🎯 Processing query with real ADK agent tools: {request.query}")
         
-        # Use the real ADK agent tools directly for reliable execution
-        from agents.generative_ui.agent import create_sales_trend_card, create_metric_card, create_comparison_bar_chart
-        from agents.geospatial_agent import create_regional_heatmap_tool, create_location_metrics_tool
-        from agents.accessibility_agent import create_high_contrast_chart_tool, create_screen_reader_table_tool
+        # Use the imported ADK agent tools directly for reliable execution
+        # Tools already imported at module level
         
         results = []
         query_lower = request.query.lower()

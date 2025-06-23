@@ -119,3 +119,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Ensure Tremor charts render properly */
+.tremor-chart {
+  overflow: visible !important;
+}
+
+.tremor-chart svg {
+  overflow: visible !important;
+}
+
+/* Force chart container sizing */
+.safe-rendered-component .tremor-chart {
+  min-height: 200px;
+  width: 100%;
+}

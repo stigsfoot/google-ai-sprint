@@ -1,8 +1,7 @@
 """
 Generative UI agent package
-Simplified for demo
+Authentic ADK implementation
 """
-# Commenting out for demo
-# from .agent import root_agent, chart_generation_agent
+from .agent import root_agent, chart_generation_agent
 
-__all__ = []
+__all__ = ['root_agent', 'chart_generation_agent']

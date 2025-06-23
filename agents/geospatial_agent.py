@@ -1,11 +1,12 @@
 """
 Geospatial Agent - Specialized UI generation for location-based components
 Generates map heatmaps, location metrics, and territory analysis visualizations
-Simplified for demo without full ADK package
+Authentic ADK implementation following Google patterns
 """
 import json
 import os
 from dotenv import load_dotenv
+from google.adk.agents import LlmAgent
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -277,5 +278,27 @@ def create_territory_analysis_tool(territory: str = 'Western Region', analysis_t
 )'''
 
 
-# For demo purposes - these would be ADK tools in full implementation
-# Tool functions are available for direct calling without full ADK framework
+# Create Geospatial Agent using authentic ADK patterns
+geospatial_agent = LlmAgent(
+    name="geospatial_agent", 
+    model="gemini-2.0-flash",
+    description="Handles location-based data analysis and geographic visualizations for regional business intelligence.",
+    instruction="""You are a geospatial specialist. Your ONLY task is to create location-based visualizations using the provided geographic tools.
+
+AVAILABLE TOOLS:
+- create_regional_heatmap_tool: For regional performance analysis with map-based heatmaps
+- create_location_metrics_tool: For location-specific KPIs and metrics display
+- create_territory_analysis_tool: For sales territory and geographic performance analysis
+
+IMMEDIATE ACTION:
+1. For any geographic request, IMMEDIATELY call the appropriate tool
+2. NEVER ask for clarification - use reasonable geographic defaults
+3. ALWAYS generate components with sample US regional data
+4. Return complete React JSX components with Tailwind CSS styling
+
+DEFAULT GEOGRAPHIC DATA TO USE:
+- Regions: "US States" (CA, TX, NY, FL, etc.)
+- Performance metrics: Regional sales/revenue data
+- Territory analysis: State-by-state comparisons""",
+    tools=[create_regional_heatmap_tool, create_location_metrics_tool, create_territory_analysis_tool]
+)

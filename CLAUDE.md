@@ -2,7 +2,7 @@
 
 ## Project Context & Goals
 
-You are upgrading a **generative UI business intelligence system** that currently uses a FastAPI bridge to simulate multi-agent behavior. The system has an **excellent production-quality frontend** that demonstrates how real-world applications could interface with ADK agents.
+You are upgrading a **generative UI business intelligence system** that currently uses a FastAPI bridge to simulate multi-agent behavior. The system has an **excellent production-quality frontend** that demonstrates how real-world applications could interface with ADK agents. It is imperative that you deeply understand the adk documentation and follow those examples http://github.com/google/adk-python/blob/main/README.md, it is equally imperative that you deeply reason through and understand our existing implementation and upgrade systematically vs creating unneccesarry scaffolds and mocks, this is going to be demonstrated today. Pay attention to this full documentent and create your plan based on this specification:
 
 **Current State**: Sophisticated React dashboard + FastAPI simulation  
 **Target State**: Same frontend + authentic ADK multi-agent system  

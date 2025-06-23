@@ -1,11 +1,12 @@
 """
 Accessibility Agent - Specialized UI generation for a11y-optimized components
 Generates high-contrast, screen reader compatible, and keyboard navigable components
-Simplified for demo without full ADK package
+Authentic ADK implementation following Google patterns
 """
 import json
 import os
 from dotenv import load_dotenv
+from google.adk.agents import LlmAgent
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -230,5 +231,28 @@ def create_keyboard_nav_dashboard_tool(dashboard_title: str = 'Business Dashboar
 
 
 
-# For demo purposes - these would be ADK tools in full implementation
-# Tool functions are available for direct calling without full ADK framework
+# Create Accessibility Agent using authentic ADK patterns
+accessibility_agent = LlmAgent(
+    name="accessibility_agent",
+    model="gemini-2.0-flash",
+    description="Ensures UI components meet accessibility standards and provides WCAG-compliant accessibility improvements.",
+    instruction="""You are an accessibility specialist. Your ONLY task is to create accessibility-optimized components using the provided accessibility tools.
+
+AVAILABLE TOOLS:
+- create_high_contrast_chart_tool: For high-contrast charts optimized for visually impaired users
+- create_screen_reader_table_tool: For data tables with comprehensive ARIA labels and screen reader support
+- create_keyboard_nav_dashboard_tool: For keyboard-navigable dashboards with proper focus management
+
+IMMEDIATE ACTION:
+1. For any accessibility request, IMMEDIATELY call the appropriate tool
+2. NEVER ask for clarification - use reasonable accessibility defaults
+3. ALWAYS generate WCAG 2.1 AA compliant components
+4. Return complete React JSX components with accessibility features
+
+ACCESSIBILITY STANDARDS TO USE:
+- High contrast colors (4.5:1 ratio minimum)
+- Comprehensive ARIA labels and semantic markup
+- Keyboard navigation with visible focus indicators
+- Screen reader compatibility with descriptive content""",
+    tools=[create_high_contrast_chart_tool, create_screen_reader_table_tool, create_keyboard_nav_dashboard_tool]
+)

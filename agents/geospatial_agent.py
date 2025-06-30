@@ -80,7 +80,9 @@ def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: 
     
     # Generate dynamic markers based on selected configuration
     markers_jsx = ""
-    for marker in selected_config["markers"]:
+    for i, marker in enumerate(selected_config["markers"]):
+        # Add comma only between markers, not after the last one
+        comma = "," if i < len(selected_config["markers"]) - 1 else ""
         markers_jsx += f'''
       React.createElement(CircleMarker, {{
         center: [{marker["center"][0]}, {marker["center"][1]}],
@@ -92,7 +94,7 @@ def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: 
         fillOpacity: 0.7
       }},
         React.createElement(Popup, {{}}, "{marker["label"]}")
-      ),'''
+      ){comma}'''
     
     return f'''React.createElement(Card, {{ className: "p-6 border-l-4 border-l-blue-500" }},
   React.createElement("div", {{ className: "flex items-center space-x-2 mb-4" }},

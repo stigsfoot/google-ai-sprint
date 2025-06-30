@@ -118,13 +118,43 @@ async def analyze_query(request: QueryRequest):
         
         # Execute agent using authentic ADK Runner pattern
         agent_response = ""
+        all_responses = []
+        
         async for event in runner.run_async(
             user_id=user_id,
             session_id=session_id, 
             new_message=content
         ):
-            if event.is_final_response() and event.content:
-                agent_response = event.content.parts[0].text
+            print(f"🔍 Event type: {type(event).__name__}, is_final: {event.is_final_response()}")
+            
+            # Collect all responses during the conversation
+            if hasattr(event, 'content') and event.content:
+                for part in event.content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        print(f"📝 Text part: {part.text[:100]}...")
+                        all_responses.append(part.text)
+                    elif hasattr(part, 'function_call') and part.function_call:
+                        print(f"🔧 Function call: {part.function_call.name if part.function_call else 'None'}")
+                    elif hasattr(part, 'function_response'):
+                        print(f"🎯 Function response: {str(part.function_response)[:100]}...")
+                        if hasattr(part.function_response, 'response'):
+                            all_responses.append(str(part.function_response.response))
+            
+            if event.is_final_response():
+                # Use the last meaningful response (often the function result)
+                if all_responses:
+                    # Prefer non-conversational responses that look like JSX
+                    for response in reversed(all_responses):
+                        if '<Card' in response or 'React.createElement' in response:
+                            agent_response = response
+                            print(f"🎨 Found JSX response: {agent_response[:100]}...")
+                            break
+                    
+                    # If no JSX found, use the last response
+                    if not agent_response:
+                        agent_response = all_responses[-1]
+                else:
+                    agent_response = "No response generated"
                 break
         
         print(f"🤖 ADK Agent Response: {agent_response}")
@@ -133,10 +163,38 @@ async def analyze_query(request: QueryRequest):
         
         # Parse the agent response to extract UI components
         if agent_response:
+            # Try to detect JSX components and determine component type
+            component_type = "agent_response"  # default
+            
+            # Detect component type based on content
+            if "<Card" in agent_response and "LineChart" in agent_response:
+                component_type = "trend_line"
+            elif "<Card" in agent_response and "BarChart" in agent_response:
+                component_type = "comparison_bar"
+            elif "<Card" in agent_response and ("metric" in agent_response.lower() or "Badge" in agent_response):
+                component_type = "metric_card"
+            elif "MapContainer" in agent_response or "regional" in agent_response.lower():
+                component_type = "regional_heatmap"
+            elif "accessibility" in agent_response.lower() or "WCAG" in agent_response or "aria-label" in agent_response:
+                component_type = "accessible_dashboard"
+            
+            # Extract clean JSX if wrapped in markdown code blocks
+            clean_jsx = agent_response
+            if "```jsx" in agent_response:
+                import re
+                jsx_match = re.search(r'```jsx\s*(.*?)\s*```', agent_response, re.DOTALL)
+                if jsx_match:
+                    clean_jsx = jsx_match.group(1).strip()
+            elif "```" in agent_response:
+                import re
+                code_match = re.search(r'```\s*(.*?)\s*```', agent_response, re.DOTALL)
+                if code_match:
+                    clean_jsx = code_match.group(1).strip()
+            
             results.append(ComponentResult(
                 agent="generative_ui_orchestrator",
-                component_type="agent_response",
-                component_code=str(agent_response),
+                component_type=component_type,
+                component_code=clean_jsx,
                 business_context=f"ADK Agent response for: {request.query}"
             ))
         
@@ -171,9 +229,26 @@ async def analyze_query(request: QueryRequest):
         import traceback
         traceback.print_exc()
         
+        # Provide detailed error information for debugging
+        error_details = {
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "query": request.query,
+            "agents_available": agents_available,
+            "api_key_configured": bool(os.getenv('GOOGLE_API_KEY')),
+            "root_agent_name": root_agent.name if root_agent else "None",
+            "sub_agents": [agent.name for agent in root_agent.sub_agents] if root_agent and hasattr(root_agent, 'sub_agents') else []
+        }
+        
+        print(f"🔍 Error details: {json.dumps(error_details, indent=2)}")
+        
         raise HTTPException(
             status_code=500,
-            detail=f"Agent execution failed: {str(e)}"
+            detail={
+                "message": "Agent execution failed",
+                "error": str(e),
+                "debug_info": error_details
+            }
         )
 
 @app.get("/api/agents")

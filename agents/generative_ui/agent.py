@@ -11,7 +11,7 @@ from google.adk.agents import LlmAgent
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 
-def create_sales_trend_card(sales_data: str = '[]', period: str = 'Q4') -> str:
+def create_sales_trend_card(sales_data: str, period: str) -> str:
     """Tool that generates a sales trend React component with clean JSX."""
     # Generate sample data for visualization
     sample_data = [
@@ -50,7 +50,7 @@ def create_sales_trend_card(sales_data: str = '[]', period: str = 'Q4') -> str:
 </Card>'''
 
 
-def create_metric_card(value: str = '$47.2K', label: str = 'Monthly Revenue', change: str = '+12.3%', context: str = 'Compared to previous month') -> str:
+def create_metric_card(value: str, label: str, change: str, context: str) -> str:
     """Generate a key metric card with change indicator using clean JSX."""
     change_color = "green" if change.startswith("+") else "red" if change.startswith("-") else "gray"
     
@@ -64,7 +64,7 @@ def create_metric_card(value: str = '$47.2K', label: str = 'Monthly Revenue', ch
 </Card>'''
 
 
-def create_comparison_bar_chart(title: str = 'Product Performance Comparison', insight: str = 'Product C leads with 3.2K units') -> str:
+def create_comparison_bar_chart(title: str, insight: str) -> str:
     """Generate a comparison bar chart component using clean JSX."""
     sample_data = [
         {"category": "Product A", "value": 2400}, 
@@ -100,23 +100,31 @@ chart_generation_agent = LlmAgent(
     name="chart_generation_agent",
     model="gemini-2.0-flash",
     description="Creates sales trend charts, metric cards, and comparison visualizations using specialized chart tools.",
-    instruction="""You are a chart generation specialist. Your ONLY task is to create visualizations using the provided chart tools.
+    instruction="""You are a chart generation specialist.
 
-AVAILABLE TOOLS:
-- create_sales_trend_card: For trend analysis and time-series data visualization
-- create_metric_card: For KPI displays and key metrics with change indicators  
-- create_comparison_bar_chart: For comparative analysis across categories
+CRITICAL STOPPING RULE:
+- Call ONE tool that matches the request
+- Return the JSX result immediately after successful generation
+- NEVER call multiple tools for a single request
+- STOP after generating one component
 
-IMMEDIATE ACTION:
-1. For any request, IMMEDIATELY call the appropriate tool
-2. NEVER ask for clarification - use reasonable defaults
-3. ALWAYS generate components with sample business data
-4. Return complete React JSX components with Tailwind CSS styling
+TOOL SELECTION (choose EXACTLY ONE):
+- Sales/revenue/trends/growth → create_sales_trend_card
+- Metrics/KPIs/single values/totals → create_metric_card  
+- Comparisons/categories/products → create_comparison_bar_chart
 
-DEFAULT DATA TO USE:
-- Sales period: "Q4 2024"
-- Revenue metrics: "$47.2K monthly" 
-- Growth indicators: "+23% vs previous period""",
+EXECUTION PATTERN:
+1. Analyze request to identify ONE primary visualization need
+2. Call the appropriate tool ONCE with reasonable defaults
+3. Return the generated JSX component immediately
+4. STOP - do not generate additional components
+
+EXAMPLE FLOWS:
+User: "show sales trends" → call create_sales_trend_card → STOP
+User: "revenue metrics" → call create_metric_card → STOP  
+User: "compare products" → call create_comparison_bar_chart → STOP
+
+CRITICAL: Never call tools multiple times. One request = One tool call = One component.""",
     tools=[create_sales_trend_card, create_metric_card, create_comparison_bar_chart]
 )
 
@@ -128,28 +136,39 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from agents.geospatial_agent import geospatial_agent
 from agents.accessibility_agent import accessibility_agent
 
-# Create Root Orchestrator Agent with Multi-Agent Coordination
+# Create Root Orchestrator Agent with Multi-Agent Delegation
 root_agent = LlmAgent(
     name="generative_ui_orchestrator",
     model="gemini-2.0-flash", 
     instruction="""You are a UI orchestrator that delegates tasks to specialized agents using transfer_to_agent().
 
-DELEGATION RULES - USE transfer_to_agent(agent_name='target_name'):
-- For sales trends, charts, metrics, or visualizations → transfer_to_agent(agent_name='chart_generation_agent')
-- For location-based or geographic queries → transfer_to_agent(agent_name='geospatial_agent')  
-- For accessibility concerns → transfer_to_agent(agent_name='accessibility_agent')
+MULTI-AGENT DELEGATION STRATEGY:
+1. Analyze business intelligence queries for visualization requirements
+2. Delegate to the most appropriate specialized agent using transfer_to_agent()
+3. Let sub-agents handle the actual UI component generation
+4. Return their output directly to maintain clean delegation
 
-CRITICAL BEHAVIOR:
-1. NEVER provide conversational responses like "Could you please provide..."
-2. IMMEDIATELY analyze the query type  
-3. INSTANTLY call transfer_to_agent() with the appropriate specialist
-4. DO NOT try to handle requests yourself - always delegate
+AVAILABLE SPECIALIZED AGENTS:
+- chart_generation_agent: Sales trends, metrics, comparisons, business charts
+- geospatial_agent: Maps, regional data, location-based visualizations  
+- accessibility_agent: WCAG-compliant components, keyboard navigation
 
-EXAMPLES:
-- "show sales trends" → transfer_to_agent(agent_name='chart_generation_agent')
-- "display regional data" → transfer_to_agent(agent_name='geospatial_agent')
-- "accessible dashboard" → transfer_to_agent(agent_name='accessibility_agent')
+DELEGATION RULES:
+- Sales, revenue, trends, metrics, KPIs, comparisons → transfer_to_agent(chart_generation_agent)
+- Maps, regional, geographic, territory, location → transfer_to_agent(geospatial_agent)
+- Accessibility, WCAG, keyboard, screen reader, high-contrast → transfer_to_agent(accessibility_agent)
 
-Your first action must be to call transfer_to_agent() - not provide text responses.""",
+CRITICAL ORCHESTRATION REQUIREMENTS:
+- ALWAYS use transfer_to_agent() for delegation - never do work yourself
+- Let sub-agents generate the actual JSX components
+- Maintain clean separation of concerns across the multi-agent system
+- Trust specialized agents to handle their domain expertise
+
+EXAMPLE MULTI-AGENT FLOW:
+User: "show sales trends for Q4"
+You: transfer_to_agent(chart_generation_agent) 
+chart_generation_agent: [generates sales trend JSX component]
+Output: Complete JSX from specialized chart agent""",
+    tools=[],  # Root agent has no tools - only delegates
     sub_agents=[chart_generation_agent, geospatial_agent, accessibility_agent]
 )

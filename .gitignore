@@ -37,4 +37,11 @@ yarn-error.log*
 coverage/
 
 # Vercel
-.vercel/ 
+.vercel/
+
+# ADK Server logs
+*.log
+adk_server.log
+
+# Test outputs
+test_results.json

@@ -19,8 +19,12 @@ You are upgrading a **generative UI business intelligence system** that currentl
 ### 2. **Replace FastAPI Bridge with Real ADK Agents**
 - Convert `/adk_server.py` simulation to authentic ADK agent implementation
 - Replace keyword-based routing with actual LLM reasoning and delegation
-- Implement proper `@Tool` decorated methods instead of standalone functions
-- Enable real agent-to-agent handoffs and coordination
+ Key Findings from ADK Samples:
+
+  1. No @Tool Decorators - Tools are regular Python functions
+  2. Tools Passed as List - Tools are provided to agents via tools=[...] parameter
+  3. Agent Creation Pattern - Use Agent or LlmAgent classes from google.adk.agents
+  4. Multi-Agent - Use sub_agents=[...] parameter for hierarchical structure- Enable real agent-to-agent handoffs and coordination
 
 ### 3. **Implement Authentic Multi-Agent Architecture**
 ```python

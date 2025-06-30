@@ -12,7 +12,7 @@ from google.adk.agents import LlmAgent
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 
-def create_regional_heatmap_tool(regions: str = 'US States', metric_name: str = 'Sales Volume', insight: str = 'California leads with 40% of total sales') -> str:
+def create_regional_heatmap_tool(regions: str, metric_name: str, insight: str) -> str:
     """Generate a regional heatmap component with interactive Leaflet map."""
     sample_regions = '{"California": 45000, "Texas": 32000, "New York": 28000, "Florida": 22000, "Illinois": 18000}'
     
@@ -106,7 +106,7 @@ def create_regional_heatmap_tool(regions: str = 'US States', metric_name: str = 
 </Card>'''
 
 
-def create_location_metrics_tool(location: str = 'San Francisco', metrics: str = 'multiple', context: str = 'West Coast region') -> str:
+def create_location_metrics_tool(location: str, metrics: str, context: str) -> str:
     """Generate location-specific metrics card with geographic context and mini map."""
     return f'''React.createElement(Card, {{ className: "p-6 border-2 border-green-200" }},
   React.createElement("div", {{ className: "flex items-center justify-center mb-4" }},
@@ -164,7 +164,7 @@ def create_location_metrics_tool(location: str = 'San Francisco', metrics: str =
 )'''
 
 
-def create_territory_analysis_tool(territory: str = 'Western Region', analysis_type: str = 'Sales Performance', insights: str = 'Territory shows 25% growth YoY') -> str:
+def create_territory_analysis_tool(territory: str, analysis_type: str, insights: str) -> str:
     """Generate territory analysis component with performance breakdown and territorial map."""
     sample_territories = '["Northern CA", "Southern CA", "Nevada", "Arizona", "Utah"]'
     
@@ -283,22 +283,30 @@ geospatial_agent = LlmAgent(
     name="geospatial_agent", 
     model="gemini-2.0-flash",
     description="Handles location-based data analysis and geographic visualizations for regional business intelligence.",
-    instruction="""You are a geospatial specialist. Your ONLY task is to create location-based visualizations using the provided geographic tools.
+    instruction="""You are a geospatial specialist.
 
-AVAILABLE TOOLS:
-- create_regional_heatmap_tool: For regional performance analysis with map-based heatmaps
-- create_location_metrics_tool: For location-specific KPIs and metrics display
-- create_territory_analysis_tool: For sales territory and geographic performance analysis
+CRITICAL STOPPING RULE:
+- Call ONE tool that matches the request
+- Return the JSX result immediately after successful generation
+- NEVER call multiple tools for a single request
+- STOP after generating one component
 
-IMMEDIATE ACTION:
-1. For any geographic request, IMMEDIATELY call the appropriate tool
-2. NEVER ask for clarification - use reasonable geographic defaults
-3. ALWAYS generate components with sample US regional data
-4. Return complete React JSX components with Tailwind CSS styling
+TOOL SELECTION (choose EXACTLY ONE):
+- Regional/heatmap/geographic analysis → create_regional_heatmap_tool
+- Location-specific metrics → create_location_metrics_tool
+- Territory/sales territory analysis → create_territory_analysis_tool
 
-DEFAULT GEOGRAPHIC DATA TO USE:
-- Regions: "US States" (CA, TX, NY, FL, etc.)
-- Performance metrics: Regional sales/revenue data
-- Territory analysis: State-by-state comparisons""",
+EXECUTION PATTERN:
+1. Analyze request to identify ONE primary geographic visualization need
+2. Call the appropriate tool ONCE with reasonable US regional defaults
+3. Return the generated JSX component immediately
+4. STOP - do not generate additional components
+
+EXAMPLE FLOWS:
+User: "regional sales" → call create_regional_heatmap_tool → STOP
+User: "location metrics" → call create_location_metrics_tool → STOP
+User: "territory analysis" → call create_territory_analysis_tool → STOP
+
+CRITICAL: Never call tools multiple times. One request = One tool call = One component.""",
     tools=[create_regional_heatmap_tool, create_location_metrics_tool, create_territory_analysis_tool]
 )

@@ -12,7 +12,7 @@ from google.adk.agents import LlmAgent
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 
-def create_high_contrast_chart_tool(data_type: str = 'sales', chart_title: str = 'Sales Performance', description: str = 'Monthly sales data showing upward trend') -> str:
+def create_high_contrast_chart_tool(data_type: str, chart_title: str, description: str) -> str:
     """Generate high contrast chart for visually impaired users."""
     chart_id = f"chart_{hash(chart_title) % 10000}"
     
@@ -58,7 +58,7 @@ def create_high_contrast_chart_tool(data_type: str = 'sales', chart_title: str =
     </Card>'''
 
 
-def create_screen_reader_table_tool(table_title: str = 'Sales Data', data_summary: str = '5 regions with quarterly performance', row_count: str = '5') -> str:
+def create_screen_reader_table_tool(table_title: str, data_summary: str, row_count: str) -> str:
     """Generate screen reader optimized data table with ARIA labels."""
     table_id = f"table_{hash(table_title) % 10000}"
     
@@ -128,7 +128,7 @@ def create_screen_reader_table_tool(table_title: str = 'Sales Data', data_summar
     </Card>'''
 
 
-def create_keyboard_nav_dashboard_tool(dashboard_title: str = 'Business Dashboard', widget_count: str = '4', nav_instructions: str = 'Use Tab to navigate, Enter to select') -> str:
+def create_keyboard_nav_dashboard_tool(dashboard_title: str, widget_count: str, nav_instructions: str) -> str:
     """Generate keyboard navigable dashboard with focus management."""
     dashboard_id = f"dash_{hash(dashboard_title) % 10000}"
     
@@ -236,23 +236,30 @@ accessibility_agent = LlmAgent(
     name="accessibility_agent",
     model="gemini-2.0-flash",
     description="Ensures UI components meet accessibility standards and provides WCAG-compliant accessibility improvements.",
-    instruction="""You are an accessibility specialist. Your ONLY task is to create accessibility-optimized components using the provided accessibility tools.
+    instruction="""You are an accessibility specialist.
 
-AVAILABLE TOOLS:
-- create_high_contrast_chart_tool: For high-contrast charts optimized for visually impaired users
-- create_screen_reader_table_tool: For data tables with comprehensive ARIA labels and screen reader support
-- create_keyboard_nav_dashboard_tool: For keyboard-navigable dashboards with proper focus management
+CRITICAL STOPPING RULE:
+- Call ONE tool that matches the request
+- Return the JSX result immediately after successful generation
+- NEVER call multiple tools for a single request
+- STOP after generating one component
 
-IMMEDIATE ACTION:
-1. For any accessibility request, IMMEDIATELY call the appropriate tool
-2. NEVER ask for clarification - use reasonable accessibility defaults
-3. ALWAYS generate WCAG 2.1 AA compliant components
-4. Return complete React JSX components with accessibility features
+TOOL SELECTION (choose EXACTLY ONE):
+- High contrast/visually impaired → create_high_contrast_chart_tool
+- Screen reader/data tables → create_screen_reader_table_tool
+- Keyboard navigation/dashboard → create_keyboard_nav_dashboard_tool
 
-ACCESSIBILITY STANDARDS TO USE:
-- High contrast colors (4.5:1 ratio minimum)
-- Comprehensive ARIA labels and semantic markup
-- Keyboard navigation with visible focus indicators
-- Screen reader compatibility with descriptive content""",
+EXECUTION PATTERN:
+1. Analyze request to identify ONE primary accessibility need
+2. Call the appropriate tool ONCE with WCAG 2.1 AA compliant defaults
+3. Return the generated JSX component immediately
+4. STOP - do not generate additional components
+
+EXAMPLE FLOWS:
+User: "high contrast chart" → call create_high_contrast_chart_tool → STOP
+User: "accessible table" → call create_screen_reader_table_tool → STOP
+User: "keyboard dashboard" → call create_keyboard_nav_dashboard_tool → STOP
+
+CRITICAL: Never call tools multiple times. One request = One tool call = One component.""",
     tools=[create_high_contrast_chart_tool, create_screen_reader_table_tool, create_keyboard_nav_dashboard_tool]
 )

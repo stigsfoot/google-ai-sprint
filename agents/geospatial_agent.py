@@ -109,7 +109,7 @@ def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: 
       className: "rounded-lg z-0"
     }},
       React.createElement(TileLayer, {{
-        url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
+        url: "https://a.tile.openstreetmap.org/1/0/0.png",
         attribution: "© OpenStreetMap contributors"
       }}),{markers_jsx}
     )
@@ -162,7 +162,7 @@ def create_location_metrics_tool(location: str, metrics: str, context: str) -> s
         className: "rounded-lg z-0"
       }},
         React.createElement(TileLayer, {{
-          url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
+          url: "https://a.tile.openstreetmap.org/1/0/0.png",
           attribution: "© OpenStreetMap contributors"
         }}),
         React.createElement(CircleMarker, {{
@@ -230,7 +230,7 @@ def create_territory_analysis_tool(territory: str, analysis_type: str, insights:
           className: "rounded-lg z-0"
         }},
           React.createElement(TileLayer, {{
-            url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
+            url: "https://a.tile.openstreetmap.org/1/0/0.png",
             attribution: "© OpenStreetMap contributors"
           }}),
           React.createElement(CircleMarker, {{

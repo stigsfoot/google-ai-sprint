@@ -229,9 +229,44 @@ export default function SafeComponentRenderer({
           
         case 'agent_response':
         case 'accessible_dashboard':
-          // Handle raw JSX from ADK agents
-          console.log('✅ Matched agent_response case! Rendering ADK agent JSX content')
-          const cleanedCode = componentCode.replace(/```jsx\n?|```\n?/g, '').trim()
+          // Handle React.createElement format from ADK agents
+          console.log('✅ Matched agent_response case! Processing ADK agent React.createElement content')
+          const cleanedCode = componentCode.replace(/```jsx\n?|```\n?/g, '').replace(/```json\n?|```\n?/g, '').trim()
+          
+          // Check if it's React.createElement format from ADK agents
+          if (cleanedCode.includes('React.createElement')) {
+            try {
+              console.log('🎯 Executing ADK agent React.createElement component')
+              // Use eval to execute the React.createElement code
+              // This is safe because we control the ADK agent output
+              const ComponentFunction = new Function('React', 'Card', 'Badge', 'LineChart', 'BarChart', 'BarChart3', 'TrendingUp', 'MapPin', 'Text', 'Flex', 'Metric', 'MapContainer', 'TileLayer', 'CircleMarker', 'Popup', `return ${cleanedCode}`)
+              const component = ComponentFunction(React, Card, { variant: "default", color: "green", size: "lg", className: "", children: null, ...Badge }, 
+                // Mock chart components that return simple divs
+                (props: any) => React.createElement('div', { className: `${props.className} border-2 border-green-200 p-4 bg-green-50 rounded-lg` }, 
+                  React.createElement('div', { className: 'text-center text-green-700 font-semibold' }, 'Line Chart'),
+                  React.createElement('div', { className: 'text-xs text-green-600 mt-1' }, `Data: ${JSON.stringify(props.data?.slice(0, 3) || [])}`)),
+                (props: any) => React.createElement('div', { className: `${props.className} border-2 border-blue-200 p-4 bg-blue-50 rounded-lg` }, 
+                  React.createElement('div', { className: 'text-center text-blue-700 font-semibold' }, 'Bar Chart'),
+                  React.createElement('div', { className: 'text-xs text-blue-600 mt-1' }, `Data: ${JSON.stringify(props.data?.slice(0, 3) || [])}`)),
+                (props: any) => React.createElement('div', { className: props.className }, '📊'),
+                (props: any) => React.createElement('div', { className: props.className }, '📈'),
+                (props: any) => React.createElement('div', { className: props.className }, '📍'),
+                (props: any) => React.createElement('span', { className: props.className }, props.children),
+                (props: any) => React.createElement('div', { className: props.className }, props.children),
+                (props: any) => React.createElement('div', { className: props.className }, props.children),
+                // Mock map components
+                (props: any) => React.createElement('div', { className: `${props.className} bg-blue-100 rounded-lg p-4 border-2 border-blue-300` }, 
+                  React.createElement('div', { className: 'text-center text-blue-700 font-semibold' }, '🗺️ Interactive Map'),
+                  React.createElement('div', { className: 'text-xs text-blue-600 mt-1' }, `Center: ${JSON.stringify(props.center)}, Zoom: ${props.zoom}`)),
+                (props: any) => React.createElement('div', null),
+                (props: any) => React.createElement('div', { className: 'inline-block w-4 h-4 rounded-full mr-1', style: { backgroundColor: props.fillColor } }),
+                (props: any) => React.createElement('div', { className: 'text-xs bg-gray-100 p-1 rounded' }, props.children)
+              )
+              return component
+            } catch (error) {
+              console.warn('❌ Failed to execute React.createElement component:', error)
+            }
+          }
           
           // For accessibility-focused components, create a proper React component
           if (cleanedCode.includes('WCAG') || cleanedCode.includes('accessibility') || cleanedCode.includes('Keyboard') || componentType === 'accessible_dashboard') {

@@ -178,9 +178,28 @@ async def analyze_query(request: QueryRequest):
             elif "accessibility" in agent_response.lower() or "WCAG" in agent_response or "aria-label" in agent_response:
                 component_type = "accessible_dashboard"
             
-            # Extract clean JSX if wrapped in markdown code blocks
+            # Extract clean JSX if wrapped in markdown code blocks or JSON structure
             clean_jsx = agent_response
-            if "```jsx" in agent_response:
+            
+            # Handle JSON wrapper format from agents
+            if "```json" in agent_response and '"result":' in agent_response:
+                try:
+                    import re
+                    # Extract JSON content between ```json and ```
+                    json_match = re.search(r'```json\s*(.*?)\s*```', agent_response, re.DOTALL)
+                    if json_match:
+                        json_content = json_match.group(1).strip()
+                        parsed = json.loads(json_content)
+                        
+                        # Extract the result from the nested structure
+                        for key, value in parsed.items():
+                            if isinstance(value, dict) and 'result' in value:
+                                clean_jsx = value['result']
+                                print(f"📦 Extracted JSX from JSON wrapper: {clean_jsx[:100]}...")
+                                break
+                except Exception as e:
+                    print(f"⚠️ Failed to extract from JSON wrapper: {e}")
+            elif "```jsx" in agent_response:
                 import re
                 jsx_match = re.search(r'```jsx\s*(.*?)\s*```', agent_response, re.DOTALL)
                 if jsx_match:

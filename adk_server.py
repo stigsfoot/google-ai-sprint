@@ -174,7 +174,7 @@ async def analyze_query(request: QueryRequest):
             elif "<Card" in agent_response and ("metric" in agent_response.lower() or "Badge" in agent_response):
                 component_type = "metric_card"
             elif "MapContainer" in agent_response or "regional" in agent_response.lower():
-                component_type = "regional_heatmap"
+                component_type = "agent_response"  # Route to React.createElement execution instead of static map
             elif "accessibility" in agent_response.lower() or "WCAG" in agent_response or "aria-label" in agent_response:
                 component_type = "accessible_dashboard"
             

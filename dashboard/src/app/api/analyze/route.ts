@@ -151,18 +151,43 @@ async function simulateRootAgent(query: string): Promise<ComponentResult[]> {
     })
   }
   
-  // Geospatial agent simulation
-  if (query.toLowerCase().includes('regional') || query.toLowerCase().includes('territory') || query.toLowerCase().includes('map') || query.toLowerCase().includes('location') || query.toLowerCase().includes('geospatial')) {
-    // Simulate regional heatmap
+  // Geospatial agent simulation with intelligent location detection
+  if (query.toLowerCase().includes('regional') || query.toLowerCase().includes('territory') || query.toLowerCase().includes('map') || query.toLowerCase().includes('location') || query.toLowerCase().includes('geospatial') || query.toLowerCase().includes('california') || query.toLowerCase().includes('texas') || query.toLowerCase().includes('new york')) {
+    
+    // Smart location detection for simulation fallback
+    const queryLower = query.toLowerCase()
+    let mapCenter = [39.8283, -98.5795]  // Default US center
+    let mapZoom = 4
+    let mapTitle = "Regional Sales Volume Analysis"
+    
+    if (queryLower.includes('california')) {
+      mapCenter = [36.7783, -119.4179]
+      mapZoom = 6
+      mapTitle = "California Sales Analysis"
+    } else if (queryLower.includes('texas')) {
+      mapCenter = [31.9686, -99.9018]
+      mapZoom = 6
+      mapTitle = "Texas Sales Analysis"
+    } else if (queryLower.includes('new york') || queryLower.includes('ny')) {
+      mapCenter = [42.1657, -74.9481]
+      mapZoom = 7
+      mapTitle = "New York Sales Analysis"
+    } else if (queryLower.includes('florida')) {
+      mapCenter = [27.7663, -82.6404]
+      mapZoom = 6
+      mapTitle = "Florida Sales Analysis"
+    }
+    
+    // Simulate regional heatmap with intelligent zoom
     const heatmapComponent = `React.createElement(Card, { className: "p-6 border-l-4 border-l-blue-500" },
   React.createElement("div", { className: "flex items-center space-x-2 mb-4" },
     React.createElement(MapPin, { className: "h-6 w-6 text-blue-600" }),
-    React.createElement(Text, { className: "text-lg font-semibold" }, "Regional Sales Volume Analysis")
+    React.createElement(Text, { className: "text-lg font-semibold" }, "${mapTitle}")
   ),
   React.createElement("div", { className: "relative bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-6" },
     React.createElement(MapContainer, {
-      center: [39.8283, -98.5795],
-      zoom: 4,
+      center: [${mapCenter[0]}, ${mapCenter[1]}],
+      zoom: ${mapZoom},
       style: { height: "300px", width: "100%" },
       className: "rounded-lg z-0"
     },

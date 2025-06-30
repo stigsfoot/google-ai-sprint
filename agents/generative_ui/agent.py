@@ -100,7 +100,7 @@ def create_comparison_bar_chart(title: str, insight: str) -> str:
 # Create Chart Generation Agent using authentic ADK patterns
 chart_generation_agent = LlmAgent(
     name="chart_generation_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-exp",
     description="Creates sales trend charts, metric cards, and comparison visualizations using specialized chart tools.",
     instruction="""You are a chart generation specialist that ALWAYS generates visualizations, NEVER asks questions.
 
@@ -141,37 +141,48 @@ from agents.accessibility_agent import accessibility_agent
 # Create Root Orchestrator Agent with Multi-Agent Delegation
 root_agent = LlmAgent(
     name="generative_ui_orchestrator",
-    model="gemini-2.0-flash", 
-    instruction="""You are a UI orchestrator that delegates to specialized agents who ALWAYS generate visualizations, NEVER ask questions.
+    model="gemini-2.0-flash-exp", 
+    instruction="""You are an intelligent UI orchestrator with VALIDATION capabilities for multi-agent generative UI system.
 
-MULTI-AGENT DELEGATION STRATEGY:
+MULTI-AGENT DELEGATION WITH QUALITY CONTROL:
 1. Analyze business intelligence queries for visualization requirements
 2. Delegate to the most appropriate specialized agent using transfer_to_agent()
-3. Specialized agents will ALWAYS generate components with logical defaults
-4. Return their output directly to maintain clean delegation
+3. VALIDATE the agent response for quality and relevance
+4. Ensure location-specific queries are properly handled by geospatial agent
 
 AVAILABLE SPECIALIZED AGENTS:
 - chart_generation_agent: Sales trends, metrics, comparisons, business charts
-- geospatial_agent: Maps, regional data, location-based visualizations  
+- geospatial_agent: Maps, regional data, location-based visualizations with intelligent zoom
 - accessibility_agent: WCAG-compliant components, keyboard navigation
 
-DELEGATION RULES:
+INTELLIGENT DELEGATION RULES:
 - Sales, revenue, trends, metrics, KPIs, comparisons → transfer_to_agent(chart_generation_agent)
-- Maps, regional, geographic, territory, location → transfer_to_agent(geospatial_agent)
+- Maps, regional, geographic, territory, location, SPECIFIC PLACES → transfer_to_agent(geospatial_agent)
+- California, Texas, New York, Florida, states, cities → transfer_to_agent(geospatial_agent)
 - Accessibility, WCAG, keyboard, screen reader, high-contrast → transfer_to_agent(accessibility_agent)
 
-CRITICAL ORCHESTRATION REQUIREMENTS:
+CRITICAL ORCHESTRATION & VALIDATION:
 - ALWAYS use transfer_to_agent() for delegation - never do work yourself
+- Geospatial agent will intelligently detect locations and auto-zoom (California→CA view, New York→NY view)
 - Sub-agents MUST generate actual React.createElement components, NOT questions
-- Sub-agents use logical defaults when parameters are unclear (e.g., entire US for maps, "sales" for metrics)
-- NEVER allow agents to respond with "What territory?" or "Which insights?" - they generate defaults
-- Maintain clean separation of concerns across the multi-agent system
+- VALIDATE that location-specific queries result in proper geographic focus
+- If geospatial response seems generic, the agent has proper fallback defaults
 
-EXAMPLE MULTI-AGENT FLOW:
-User: "show regional performance"
+EXAMPLE INTELLIGENT FLOWS:
+User: "New York territory analysis"
 You: transfer_to_agent(geospatial_agent) 
-geospatial_agent: [generates US regional map with sales data - NO QUESTIONS]
-Output: Complete React.createElement component from specialized agent""",
+geospatial_agent: [detects "New York", generates NY-focused map with zoom 7, NY-specific data]
+Output: React.createElement component with New York geographic focus
+
+User: "california sales map"  
+You: transfer_to_agent(geospatial_agent)
+geospatial_agent: [detects "california", generates CA-focused map with zoom 6, CA-specific data]
+Output: React.createElement component centered on California
+
+User: "regional performance"
+You: transfer_to_agent(geospatial_agent)
+geospatial_agent: [no specific location, generates US-wide map with all states data]
+Output: React.createElement component with continental US view""",
     tools=[],  # Root agent has no tools - only delegates
     sub_agents=[chart_generation_agent, geospatial_agent, accessibility_agent]
 )

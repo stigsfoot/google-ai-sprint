@@ -12,34 +12,87 @@ from google.adk.agents import LlmAgent
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 
-def create_regional_heatmap_tool(regions: str, metric_name: str, insight: str) -> str:
-    """Generate a regional heatmap component with intelligent location-based zoom."""
-    sample_regions = '{"California": 45000, "Texas": 32000, "New York": 28000, "Florida": 22000, "Illinois": 18000}'
+def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: str) -> str:
+    """Generate a regional heatmap component with intelligent location-based zoom.
     
-    # Smart location detection and zoom configuration
+    Args:
+        query_context: The full user query context for location detection
+        metric_name: The metric being analyzed (e.g., "sales", "performance")
+        insight: Contextual insight about the analysis
+    """
+    
+    # Smart location detection and zoom configuration with region-specific data
     location_configs = {
-        "california": {"center": [36.7783, -119.4179], "zoom": 6, "title": "California"},
-        "texas": {"center": [31.9686, -99.9018], "zoom": 6, "title": "Texas"}, 
-        "new york": {"center": [42.1657, -74.9481], "zoom": 7, "title": "New York"},
-        "ny": {"center": [42.1657, -74.9481], "zoom": 7, "title": "New York"},
-        "florida": {"center": [27.7663, -82.6404], "zoom": 6, "title": "Florida"},
-        "illinois": {"center": [40.3363, -89.0022], "zoom": 6, "title": "Illinois"},
-        "west coast": {"center": [37.0902, -119.7129], "zoom": 5, "title": "West Coast"},
-        "east coast": {"center": [39.8283, -77.5795], "zoom": 5, "title": "East Coast"},
-        "midwest": {"center": [41.8781, -87.6298], "zoom": 5, "title": "Midwest"},
-        "southeast": {"center": [32.1656, -82.9001], "zoom": 5, "title": "Southeast"},
-        "northeast": {"center": [43.2081, -71.5376], "zoom": 5, "title": "Northeast"},
-        "southwest": {"center": [34.0522, -111.0937], "zoom": 5, "title": "Southwest"}
+        "california": {
+            "center": [36.7783, -119.4179], "zoom": 6, "title": "California",
+            "data": '{"California": 45000}', 
+            "markers": [{"center": [34.0522, -118.2437], "label": "California: $45,000", "color": "#ef4444", "radius": 20}]
+        },
+        "texas": {
+            "center": [31.9686, -99.9018], "zoom": 6, "title": "Texas",
+            "data": '{"Texas": 32000}',
+            "markers": [{"center": [31.9686, -99.9018], "label": "Texas: $32,000", "color": "#f97316", "radius": 18}]
+        },
+        "new york": {
+            "center": [42.1657, -74.9481], "zoom": 7, "title": "New York",
+            "data": '{"New York": 28000}',
+            "markers": [{"center": [40.7589, -73.9851], "label": "New York: $28,000", "color": "#eab308", "radius": 16}]
+        },
+        "ny": {
+            "center": [42.1657, -74.9481], "zoom": 7, "title": "New York", 
+            "data": '{"New York": 28000}',
+            "markers": [{"center": [40.7589, -73.9851], "label": "New York: $28,000", "color": "#eab308", "radius": 16}]
+        },
+        "florida": {
+            "center": [27.7663, -82.6404], "zoom": 6, "title": "Florida",
+            "data": '{"Florida": 22000}',
+            "markers": [{"center": [27.7663, -82.6404], "label": "Florida: $22,000", "color": "#22c55e", "radius": 14}]
+        },
+        "illinois": {
+            "center": [40.3363, -89.0022], "zoom": 6, "title": "Illinois",
+            "data": '{"Illinois": 18000}', 
+            "markers": [{"center": [40.3363, -89.0022], "label": "Illinois: $18,000", "color": "#3b82f6", "radius": 12}]
+        }
     }
     
-    # Detect location from query (case insensitive)
-    query_lower = f"{regions} {metric_name} {insight}".lower()
-    selected_config = {"center": [39.8283, -98.5795], "zoom": 4, "title": "United States"}  # Default
+    # Default US configuration with all states
+    default_config = {
+        "center": [39.8283, -98.5795], "zoom": 4, "title": "United States",
+        "data": '{"California": 45000, "Texas": 32000, "New York": 28000, "Florida": 22000, "Illinois": 18000}',
+        "markers": [
+            {"center": [34.0522, -118.2437], "label": "California: $45,000", "color": "#ef4444", "radius": 20},
+            {"center": [31.9686, -99.9018], "label": "Texas: $32,000", "color": "#f97316", "radius": 15},
+            {"center": [40.7589, -73.9851], "label": "New York: $28,000", "color": "#eab308", "radius": 13},
+            {"center": [27.7663, -82.6404], "label": "Florida: $22,000", "color": "#22c55e", "radius": 11},
+            {"center": [40.3363, -89.0022], "label": "Illinois: $18,000", "color": "#3b82f6", "radius": 9}
+        ]
+    }
+    
+    # Detect location from query context (case insensitive)
+    query_lower = query_context.lower()
+    selected_config = default_config
     
     for location, config in location_configs.items():
         if location in query_lower:
             selected_config = config
+            print(f"🎯 Detected location: {location} -> {config['title']}")
             break
+    
+    # Generate dynamic markers based on selected configuration
+    markers_jsx = ""
+    for marker in selected_config["markers"]:
+        markers_jsx += f'''
+      React.createElement(CircleMarker, {{
+        center: [{marker["center"][0]}, {marker["center"][1]}],
+        radius: {marker["radius"]},
+        fillColor: "{marker["color"]}",
+        color: "{marker["color"]}",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.7
+      }},
+        React.createElement(Popup, {{}}, "{marker["label"]}")
+      ),'''
     
     return f'''React.createElement(Card, {{ className: "p-6 border-l-4 border-l-blue-500" }},
   React.createElement("div", {{ className: "flex items-center space-x-2 mb-4" }},
@@ -56,62 +109,7 @@ def create_regional_heatmap_tool(regions: str, metric_name: str, insight: str) -
       React.createElement(TileLayer, {{
         url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
         attribution: "© OpenStreetMap contributors"
-      }}),
-      React.createElement(CircleMarker, {{
-        center: [34.0522, -118.2437],
-        radius: 20,
-        fillColor: "#ef4444",
-        color: "#dc2626",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "California: $45,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [31.9686, -99.9018],
-        radius: 15,
-        fillColor: "#f97316",
-        color: "#ea580c",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "Texas: $32,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [40.7589, -73.9851],
-        radius: 13,
-        fillColor: "#eab308",
-        color: "#ca8a04",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "New York: $28,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [27.7663, -82.6404],
-        radius: 11,
-        fillColor: "#22c55e",
-        color: "#16a34a",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "Florida: $22,000")
-      ),
-      React.createElement(CircleMarker, {{
-        center: [40.3363, -89.0022],
-        radius: 9,
-        fillColor: "#3b82f6",
-        color: "#2563eb",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.7
-      }},
-        React.createElement(Popup, {{}}, "Illinois: $18,000")
-      )
+      }}),{markers_jsx}
     )
   ),
   React.createElement("div", {{ className: "mt-4 grid grid-cols-4 gap-2 text-xs" }},
@@ -122,7 +120,7 @@ def create_regional_heatmap_tool(regions: str, metric_name: str, insight: str) -
   ),
   React.createElement("div", {{ className: "mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg" }},
     React.createElement("p", {{ className: "text-sm text-blue-800 dark:text-blue-300" }}, "📍 {insight}"),
-    React.createElement("p", {{ className: "text-xs text-blue-600 dark:text-blue-400 mt-1" }}, "Data: {sample_regions}")
+    React.createElement("p", {{ className: "text-xs text-blue-600 dark:text-blue-400 mt-1" }}, "Data: {selected_config['data']}")
   )
 )'''
 
@@ -302,39 +300,40 @@ def create_territory_analysis_tool(territory: str, analysis_type: str, insights:
 # Create Geospatial Agent using authentic ADK patterns
 geospatial_agent = LlmAgent(
     name="geospatial_agent", 
-    model="gemini-2.0-flash",
+    model="gemini-2.0-flash-exp",
     description="Handles location-based data analysis and geographic visualizations for regional business intelligence.",
-    instruction="""You are a geospatial specialist that ALWAYS generates actual visualizations, NEVER asks questions.
+    instruction="""You are a geospatial specialist that ALWAYS generates actual visualizations with INTELLIGENT location detection.
 
 CRITICAL BEHAVIOR RULES:
 - ALWAYS call a tool to generate a visualization - NEVER respond with text or questions
-- NEVER ask "Which territory?" or "What insights?" - always use logical defaults
-- When location is unclear, default to entire US map with all states
-- When metric is unclear, default to "sales" analysis
+- PASS THE COMPLETE USER QUERY as the first parameter for location detection
+- Use intelligent defaults when parameters are unclear
 - Call ONE tool → Generate React.createElement component → STOP
 
-LOCATION INTELLIGENCE & DEFAULTS:
-- Detect specific locations: California, Texas, New York, Florida, etc.
-- Support regional queries: West Coast, Southeast, Midwest, etc.
-- NO LOCATION SPECIFIED → Default to entire US view (zoom 4, center US)
-- NO METRIC SPECIFIED → Default to "sales" analysis with sample data
+INTELLIGENT TOOL SELECTION:
+- Map/regional/geographic queries → create_regional_heatmap_tool(FULL_QUERY, metric, insight)
+- Specific location queries → create_regional_heatmap_tool(FULL_QUERY, metric, insight)  
+- Territory analysis → create_regional_heatmap_tool(FULL_QUERY, "territory", "analysis")
 
-TOOL SELECTION (choose EXACTLY ONE):
-- Any geographic/map/regional query → create_regional_heatmap_tool
-- Location-specific metrics → create_location_metrics_tool  
-- Territory analysis → create_territory_analysis_tool
+LOCATION INTELLIGENCE:
+- PASS COMPLETE QUERY CONTEXT to tools for smart location detection
+- Tools will auto-detect: California, Texas, New York, Florida, Illinois
+- Tools will auto-zoom to detected regions or default to US view
+- Tools will show relevant data markers for detected location
 
 EXECUTION PATTERN:
-1. Immediately call appropriate tool with sensible defaults
-2. Return React.createElement component 
-3. STOP - never ask follow-up questions
+1. Identify primary tool needed (usually create_regional_heatmap_tool)
+2. Pass COMPLETE user query as first parameter for location intelligence
+3. Use logical defaults for metric and insight parameters
+4. Return React.createElement component immediately
+5. STOP - never ask follow-up questions
 
 EXAMPLE FLOWS:
-User: "california sales" → create_regional_heatmap_tool("California", "sales", "insights") → STOP
-User: "show map" → create_regional_heatmap_tool("United States", "sales", "Regional performance") → STOP  
-User: "regional performance" → create_regional_heatmap_tool("United States", "performance", "Multi-state analysis") → STOP
-User: "territory breakdown" → create_territory_analysis_tool("United States", "breakdown", "Territory performance analysis") → STOP
+User: "New York territory analysis" → create_regional_heatmap_tool("New York territory analysis", "territory", "performance analysis") → STOP
+User: "california sales" → create_regional_heatmap_tool("california sales", "sales", "regional performance") → STOP
+User: "show texas on map" → create_regional_heatmap_tool("show texas on map", "sales", "geographic analysis") → STOP
+User: "regional performance" → create_regional_heatmap_tool("regional performance", "performance", "multi-state analysis") → STOP
 
-CRITICAL: NEVER respond with questions. ALWAYS generate visualizations with defaults.""",
+CRITICAL: Always pass the FULL USER QUERY to enable intelligent location detection.""",
     tools=[create_regional_heatmap_tool, create_location_metrics_tool, create_territory_analysis_tool]
 )

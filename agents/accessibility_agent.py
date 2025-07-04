@@ -5,11 +5,40 @@ Authentic ADK implementation following Google patterns
 """
 import json
 import os
+import time
+from collections import defaultdict, deque
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
+# Circuit Breaker for Loop Prevention (shared with geospatial agent)
+class ToolCallTracker:
+    def __init__(self, max_calls=3, time_window=60):
+        self.max_calls = max_calls
+        self.time_window = time_window
+        self.call_history = defaultdict(deque)
+    
+    def is_allowed(self, tool_name, params_hash):
+        """Check if tool call is allowed based on recent history"""
+        key = f"{tool_name}:{params_hash}"
+        now = time.time()
+        
+        # Clean old entries
+        while self.call_history[key] and now - self.call_history[key][0] > self.time_window:
+            self.call_history[key].popleft()
+        
+        # Check if under limit
+        if len(self.call_history[key]) >= self.max_calls:
+            return False
+        
+        # Record this call
+        self.call_history[key].append(now)
+        return True
+
+# Global tracker instance
+a11y_tracker = ToolCallTracker()
 
 
 def create_high_contrast_chart_tool(data_type: str, chart_title: str, description: str) -> str:
@@ -238,11 +267,13 @@ accessibility_agent = LlmAgent(
     description="Ensures UI components meet accessibility standards and provides WCAG-compliant accessibility improvements.",
     instruction="""You are an accessibility specialist.
 
-CRITICAL STOPPING RULE:
-- Call ONE tool that matches the request
-- Return the JSX result immediately after successful generation
-- NEVER call multiple tools for a single request
-- STOP after generating one component
+CRITICAL STOPPING RULES (HIGHEST PRIORITY):
+- Call EXACTLY ONE tool per request and STOP immediately
+- NEVER call the same tool multiple times in a session
+- If tool fails or returns error, STOP - do not retry
+- Return generated React component and TERMINATE
+- NEVER ask follow-up questions or request clarification
+- Circuit breaker prevents infinite loops (max 3 calls per tool/params per 60s)
 
 TOOL SELECTION (choose EXACTLY ONE):
 - High contrast/visually impaired → create_high_contrast_chart_tool

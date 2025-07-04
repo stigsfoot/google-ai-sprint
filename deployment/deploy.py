@@ -25,9 +25,9 @@ def validate_environment():
     # Load environment variables
     load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'agents', '.env'))
     
-    api_key = os.getenv('GOOGLE_AI_API_KEY')
+    api_key = os.getenv('GOOGLE_API_KEY')
     if not api_key:
-        print("❌ GOOGLE_AI_API_KEY not found in environment")
+        print("❌ GOOGLE_API_KEY not found in environment")
         return False
     
     print("✅ Environment configuration valid")

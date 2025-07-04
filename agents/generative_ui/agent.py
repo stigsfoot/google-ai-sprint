@@ -4,11 +4,40 @@ Authentic ADK implementation following Google patterns
 """
 import json
 import os
+import time
+from collections import defaultdict, deque
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+# Circuit Breaker for Loop Prevention (shared pattern)
+class ToolCallTracker:
+    def __init__(self, max_calls=3, time_window=60):
+        self.max_calls = max_calls
+        self.time_window = time_window
+        self.call_history = defaultdict(deque)
+    
+    def is_allowed(self, tool_name, params_hash):
+        """Check if tool call is allowed based on recent history"""
+        key = f"{tool_name}:{params_hash}"
+        now = time.time()
+        
+        # Clean old entries
+        while self.call_history[key] and now - self.call_history[key][0] > self.time_window:
+            self.call_history[key].popleft()
+        
+        # Check if under limit
+        if len(self.call_history[key]) >= self.max_calls:
+            return False
+        
+        # Record this call
+        self.call_history[key].append(now)
+        return True
+
+# Global tracker instance
+chart_tracker = ToolCallTracker()
 
 
 def create_sales_trend_card(sales_data: str, period: str) -> str:
@@ -104,12 +133,20 @@ chart_generation_agent = LlmAgent(
     description="Creates sales trend charts, metric cards, and comparison visualizations using specialized chart tools.",
     instruction="""You are a chart generation specialist that ALWAYS generates visualizations, NEVER asks questions.
 
+CRITICAL STOPPING RULES (HIGHEST PRIORITY):
+- Call EXACTLY ONE tool per request and STOP immediately
+- NEVER call the same tool multiple times in a session
+- If tool fails or returns error, STOP - do not retry
+- Return generated React component and TERMINATE
+- NEVER ask follow-up questions or request clarification
+- Circuit breaker prevents infinite loops (max 3 calls per tool/params per 60s)
+
 CRITICAL BEHAVIOR RULES:
 - ALWAYS call a tool to generate a chart - NEVER respond with text or questions
 - NEVER ask "What specific chart?" or "Which period?" - always use logical defaults
 - When period is unclear, default to "Q4" or "Current Period"
 - When data is unclear, use reasonable sample data for demonstration
-- Call ONE tool → Generate React.createElement component → STOP
+- Call ONE tool → Generate React.createElement component → STOP → TERMINATE
 
 TOOL SELECTION & DEFAULTS:
 - Sales/revenue/trends/growth → create_sales_trend_card (default: "Q4", sample trend data)

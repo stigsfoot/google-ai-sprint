@@ -5,21 +5,117 @@ Authentic ADK implementation following Google patterns
 """
 import json
 import os
+import time
+from collections import defaultdict, deque
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
+# Circuit Breaker for Loop Prevention
+class ToolCallTracker:
+    def __init__(self, max_calls=3, time_window=60):
+        self.max_calls = max_calls
+        self.time_window = time_window
+        self.call_history = defaultdict(deque)
+    
+    def is_allowed(self, tool_name, params_hash):
+        """Check if tool call is allowed based on recent history"""
+        key = f"{tool_name}:{params_hash}"
+        now = time.time()
+        
+        # Clean old entries
+        while self.call_history[key] and now - self.call_history[key][0] > self.time_window:
+            self.call_history[key].popleft()
+        
+        # Check if under limit
+        if len(self.call_history[key]) >= self.max_calls:
+            return False
+        
+        # Record this call
+        self.call_history[key].append(now)
+        return True
+    
+    def get_remaining_calls(self, tool_name, params_hash):
+        """Get remaining allowed calls for this tool/params combo"""
+        key = f"{tool_name}:{params_hash}"
+        now = time.time()
+        
+        # Clean old entries
+        while self.call_history[key] and now - self.call_history[key][0] > self.time_window:
+            self.call_history[key].popleft()
+        
+        return max(0, self.max_calls - len(self.call_history[key]))
+
+# Global tracker instance
+tracker = ToolCallTracker()
+
 
 def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: str) -> str:
-    """Generate a regional heatmap component with intelligent location-based zoom.
+    """Generate a regional heatmap component with intelligent location-based zoom and interactive performance categories.
     
     Args:
         query_context: The full user query context for location detection
         metric_name: The metric being analyzed (e.g., "sales", "performance")
         insight: Contextual insight about the analysis
     """
+    
+    # CIRCUIT BREAKER: Prevent infinite loops with identical parameters
+    params_hash = hash(f"{query_context}:{metric_name}:{insight}")
+    if not tracker.is_allowed("create_regional_heatmap_tool", params_hash):
+        remaining = tracker.get_remaining_calls("create_regional_heatmap_tool", params_hash)
+        return f'''React.createElement(Card, {{ className: "p-6 border-l-4 border-l-red-500" }},
+  React.createElement("div", {{ className: "text-center" }},
+    React.createElement("h3", {{ className: "text-lg font-semibold text-red-600" }}, "Rate Limit Protection"),
+    React.createElement("p", {{ className: "text-sm text-red-500 mt-2" }}, "Tool call limit reached. Please try a different query."),
+    React.createElement("p", {{ className: "text-xs text-gray-500 mt-1" }}, "Remaining calls: {remaining}")
+  )
+)'''
+    
+    # Performance categorization with region mappings for interactive legend
+    performance_categories = {
+        "high": {
+            "label": "High ($40k+)",
+            "color": "#ef4444",
+            "regions": ["California"],
+            "threshold": {"min": 40000},
+            "zoom_bounds": {"center": [34.0522, -118.2437], "zoom": 6}
+        },
+        "medium": {
+            "label": "Medium ($25-40k)", 
+            "color": "#f97316",
+            "regions": ["Texas", "New York"],
+            "threshold": {"min": 25000, "max": 39999},
+            "zoom_bounds": {"center": [36.0, -96.0], "zoom": 5}  # Centered between TX and NY
+        },
+        "low": {
+            "label": "Low ($15-25k)",
+            "color": "#eab308", 
+            "regions": ["Florida", "Illinois"],
+            "threshold": {"min": 15000, "max": 24999},
+            "zoom_bounds": {"center": [35.0, -85.0], "zoom": 5}  # Centered between FL and IL
+        },
+        "new_markets": {
+            "label": "New Markets",
+            "color": "#22c55e",
+            "regions": [],
+            "threshold": {"min": 0, "max": 14999},
+            "zoom_bounds": {"center": [39.8283, -98.5795], "zoom": 4}  # Full US view
+        }
+    }
+    
+    # Helper function to categorize regions by performance
+    def get_region_category(region_name: str, value: int) -> str:
+        for category_id, category in performance_categories.items():
+            if region_name in category["regions"]:
+                return category_id
+            # Fallback to value-based categorization
+            if value >= category["threshold"]["min"] and (
+                "max" not in category["threshold"] or value <= category["threshold"]["max"]
+            ):
+                return category_id
+        return "new_markets"  # Default fallback
     
     # Smart location detection and zoom configuration with region-specific data
     location_configs = {
@@ -96,7 +192,31 @@ def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: 
         React.createElement(Popup, {{}}, "{marker["label"]}")
       ){comma}'''
     
-    return f'''React.createElement(Card, {{ className: "p-6 border-l-4 border-l-blue-500" }},
+    # Generate structured interactive map data
+    interactive_data = {
+        "type": "interactive_map",
+        "title": f"{selected_config['title']} {metric_name} Analysis",
+        "map_config": {
+            "center": selected_config["center"],
+            "zoom": selected_config["zoom"],
+            "markers": selected_config["markers"]
+        },
+        "performance_categories": performance_categories,
+        "current_category": get_region_category(selected_config["title"], 45000),  # Use default value for now
+        "interactions": {
+            "legend_click_behavior": "zoom_to_category",
+            "marker_click_behavior": "show_details",
+            "keyboard_navigation": True
+        },
+        "insight": insight,
+        "data": selected_config["data"]
+    }
+    
+    return f'''```json
+{json.dumps(interactive_data, indent=2)}
+```
+
+React.createElement(Card, {{ className: "p-6 border-l-4 border-l-blue-500" }},
   React.createElement("div", {{ className: "flex items-center space-x-2 mb-4" }},
     React.createElement(MapPin, {{ className: "h-6 w-6 text-blue-600" }}),
     React.createElement("h3", {{ className: "text-lg font-semibold" }}, "{selected_config["title"]} {metric_name} Analysis")
@@ -129,6 +249,21 @@ def create_regional_heatmap_tool(query_context: str, metric_name: str, insight: 
 
 def create_location_metrics_tool(location: str, metrics: str, context: str) -> str:
     """Generate location-specific metrics card with geographic context and mini map."""
+    
+    # Location-specific configurations with accurate coordinates
+    location_configs = {
+        "california": {"center": [36.7783, -119.4179], "zoom": 6},
+        "texas": {"center": [31.9686, -99.9018], "zoom": 6},
+        "new york": {"center": [42.1657, -74.9481], "zoom": 7},
+        "ny": {"center": [42.1657, -74.9481], "zoom": 7},
+        "florida": {"center": [27.7663, -82.6404], "zoom": 6},
+        "illinois": {"center": [40.3363, -89.0022], "zoom": 6}
+    }
+    
+    # Get location config or default to center of US
+    location_key = location.lower().strip()
+    config = location_configs.get(location_key, {"center": [39.8283, -98.5795], "zoom": 4})
+    
     return f'''React.createElement(Card, {{ className: "p-6 border-2 border-green-200" }},
   React.createElement("div", {{ className: "flex items-center justify-center mb-4" }},
     React.createElement(MapPin, {{ className: "h-8 w-8 text-green-600 mr-2" }}),
@@ -156,17 +291,17 @@ def create_location_metrics_tool(location: str, metrics: str, context: str) -> s
     ),
     React.createElement("div", {{ className: "relative" }},
       React.createElement(MapContainer, {{
-        center: [37.7749, -122.4194],
-        zoom: 10,
+        center: [{config["center"][0]}, {config["center"][1]}],
+        zoom: {config["zoom"]},
         style: {{ height: "200px", width: "100%" }},
         className: "rounded-lg z-0"
       }},
         React.createElement(TileLayer, {{
-          url: "https://a.tile.openstreetmap.org/1/0/0.png",
+          url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
           attribution: "© OpenStreetMap contributors"
         }}),
         React.createElement(CircleMarker, {{
-          center: [37.7749, -122.4194],
+          center: [{config["center"][0]}, {config["center"][1]}],
           radius: 15,
           fillColor: "#22c55e",
           color: "#16a34a",
@@ -187,7 +322,70 @@ def create_location_metrics_tool(location: str, metrics: str, context: str) -> s
 
 def create_territory_analysis_tool(territory: str, analysis_type: str, insights: str) -> str:
     """Generate territory analysis component with performance breakdown and territorial map."""
-    sample_territories = '["Northern CA", "Southern CA", "Nevada", "Arizona", "Utah"]'
+    
+    # Territory-specific configurations with accurate coordinates and markets
+    territory_configs = {
+        "texas": {
+            "center": [31.9686, -99.9018],
+            "zoom": 6,
+            "markets": [
+                {"center": [29.7604, -95.3698], "name": "Houston", "value": "$1.8M", "radius": 16},
+                {"center": [32.7767, -96.7970], "name": "Dallas", "value": "$1.4M", "radius": 14},
+                {"center": [30.2672, -97.7431], "name": "Austin", "value": "$900k", "radius": 12},
+                {"center": [29.4241, -98.4936], "name": "San Antonio", "value": "$800k", "radius": 10}
+            ]
+        },
+        "california": {
+            "center": [36.7783, -119.4179],
+            "zoom": 6,
+            "markets": [
+                {"center": [37.7749, -122.4194], "name": "Northern CA", "value": "$1.2M", "radius": 12},
+                {"center": [34.0522, -118.2437], "name": "Southern CA", "value": "$1.4M", "radius": 14}
+            ]
+        },
+        "new york": {
+            "center": [42.1657, -74.9481],
+            "zoom": 7,
+            "markets": [
+                {"center": [40.7589, -73.9851], "name": "NYC Metro", "value": "$2.1M", "radius": 18},
+                {"center": [42.6526, -73.7562], "name": "Albany", "value": "$600k", "radius": 10},
+                {"center": [43.0481, -76.1474], "name": "Syracuse", "value": "$400k", "radius": 8}
+            ]
+        },
+        "florida": {
+            "center": [27.7663, -82.6404],
+            "zoom": 6,
+            "markets": [
+                {"center": [25.7617, -80.1918], "name": "Miami", "value": "$1.5M", "radius": 15},
+                {"center": [28.5383, -81.3792], "name": "Orlando", "value": "$900k", "radius": 12},
+                {"center": [27.9506, -82.4572], "name": "Tampa", "value": "$800k", "radius": 11}
+            ]
+        }
+    }
+    
+    # Get territory config or default
+    territory_key = territory.lower().strip()
+    config = territory_configs.get(territory_key, {
+        "center": [39.8283, -98.5795],
+        "zoom": 4,
+        "markets": [{"center": [39.8283, -98.5795], "name": "National", "value": "$2.5M", "radius": 15}]
+    })
+    
+    # Generate markets JSX
+    markets_jsx = ""
+    for market in config["markets"]:
+        markets_jsx += f'''
+          React.createElement(CircleMarker, {{
+            center: [{market["center"][0]}, {market["center"][1]}],
+            radius: {market["radius"]},
+            fillColor: "#8b5cf6",
+            color: "#7c3aed",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.7
+          }},
+            React.createElement(Popup, {{}}, "{market["name"]}: {market["value"]}")
+          ),'''
     
     return f'''React.createElement(Card, {{ className: "p-6 border-l-4 border-l-purple-500" }},
   React.createElement("div", {{ className: "flex items-center space-x-2 mb-4" }},
@@ -224,76 +422,21 @@ def create_territory_analysis_tool(territory: str, analysis_type: str, insights:
       ),
       React.createElement("div", {{ className: "relative" }},
         React.createElement(MapContainer, {{
-          center: [36.7783, -119.4179],
-          zoom: 6,
+          center: [{config["center"][0]}, {config["center"][1]}],
+          zoom: {config["zoom"]},
           style: {{ height: "180px", width: "100%" }},
           className: "rounded-lg z-0"
         }},
           React.createElement(TileLayer, {{
-            url: "https://a.tile.openstreetmap.org/1/0/0.png",
+            url: "https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png",
             attribution: "© OpenStreetMap contributors"
-          }}),
-          React.createElement(CircleMarker, {{
-            center: [37.7749, -122.4194],
-            radius: 12,
-            fillColor: "#8b5cf6",
-            color: "#7c3aed",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.7
-          }},
-            React.createElement(Popup, {{}}, "Northern CA: $1.2M")
-          ),
-          React.createElement(CircleMarker, {{
-            center: [34.0522, -118.2437],
-            radius: 14,
-            fillColor: "#8b5cf6",
-            color: "#7c3aed",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.7
-          }},
-            React.createElement(Popup, {{}}, "Southern CA: $1.4M")
-          ),
-          React.createElement(CircleMarker, {{
-            center: [39.1612, -119.7666],
-            radius: 8,
-            fillColor: "#a855f7",
-            color: "#9333ea",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.7
-          }},
-            React.createElement(Popup, {{}}, "Nevada: $300k")
-          ),
-          React.createElement(CircleMarker, {{
-            center: [33.4484, -112.0740],
-            radius: 10,
-            fillColor: "#a855f7",
-            color: "#9333ea",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.7
-          }},
-            React.createElement(Popup, {{}}, "Arizona: $350k")
-          ),
-          React.createElement(CircleMarker, {{
-            center: [40.1500, -111.8947],
-            radius: 6,
-            fillColor: "#c084fc",
-            color: "#a855f7",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.7
-          }},
-            React.createElement(Popup, {{}}, "Utah: $150k")
-          )
+          }}),{markets_jsx}
         )
       )
     ),
     React.createElement("div", {{ className: "p-3 bg-purple-50 rounded-lg" }},
       React.createElement(Text, {{ className: "text-sm text-purple-800" }}, "🎯 {insights}"),
-      React.createElement(Text, {{ className: "text-xs text-purple-600 mt-1" }}, "Coverage: {sample_territories}")
+      React.createElement(Text, {{ className: "text-xs text-purple-600 mt-1" }}, "Coverage: {[market['name'] for market in config['markets']]}")
     )
   )
 )'''
@@ -304,38 +447,54 @@ geospatial_agent = LlmAgent(
     name="geospatial_agent", 
     model="gemini-2.0-flash-exp",
     description="Handles location-based data analysis and geographic visualizations for regional business intelligence.",
-    instruction="""You are a geospatial specialist that ALWAYS generates actual visualizations with INTELLIGENT location detection.
+    instruction="""You are an INTELLIGENT geospatial specialist with sophisticated query analysis capabilities.
 
-CRITICAL BEHAVIOR RULES:
-- ALWAYS call a tool to generate a visualization - NEVER respond with text or questions
-- PASS THE COMPLETE USER QUERY as the first parameter for location detection
-- Use intelligent defaults when parameters are unclear
-- Call ONE tool → Generate React.createElement component → STOP
+CRITICAL STOPPING RULES (HIGHEST PRIORITY):
+- Call EXACTLY ONE tool per request and STOP immediately
+- NEVER call the same tool multiple times in a session
+- If tool fails or returns error, STOP - do not retry
+- Return generated React component and TERMINATE
+- NEVER ask follow-up questions or request clarification
 
-INTELLIGENT TOOL SELECTION:
-- Map/regional/geographic queries → create_regional_heatmap_tool(FULL_QUERY, metric, insight)
-- Specific location queries → create_regional_heatmap_tool(FULL_QUERY, metric, insight)  
-- Territory analysis → create_regional_heatmap_tool(FULL_QUERY, "territory", "analysis")
+PHASE 1: QUERY ANALYSIS & INTENT DETECTION
+Analyze EVERY query to understand:
+1. Geographic scope: Single location vs multi-region vs national
+2. Analysis depth: Metrics vs breakdown vs overview  
+3. Visualization type: Map-focused vs data-focused vs hybrid
 
-LOCATION INTELLIGENCE:
-- PASS COMPLETE QUERY CONTEXT to tools for smart location detection
-- Tools will auto-detect: California, Texas, New York, Florida, Illinois
-- Tools will auto-zoom to detected regions or default to US view
-- Tools will show relevant data markers for detected location
+PHASE 2: INTELLIGENT TOOL SELECTION LOGIC
 
-EXECUTION PATTERN:
-1. Identify primary tool needed (usually create_regional_heatmap_tool)
-2. Pass COMPLETE user query as first parameter for location intelligence
-3. Use logical defaults for metric and insight parameters
-4. Return React.createElement component immediately
-5. STOP - never ask follow-up questions
+🗺️ create_regional_heatmap_tool WHEN:
+- Multi-region queries: "regional performance", "national overview", "performance across territories"
+- Map-focused requests: "show me on a map", "heatmap", "geographic visualization"
+- Broad geographic scope: "all regions", "company-wide geographic", "territory overview"
 
-EXAMPLE FLOWS:
-User: "New York territory analysis" → create_regional_heatmap_tool("New York territory analysis", "territory", "performance analysis") → STOP
-User: "california sales" → create_regional_heatmap_tool("california sales", "sales", "regional performance") → STOP
-User: "show texas on map" → create_regional_heatmap_tool("show texas on map", "sales", "geographic analysis") → STOP
-User: "regional performance" → create_regional_heatmap_tool("regional performance", "performance", "multi-state analysis") → STOP
+🎯 create_territory_analysis_tool WHEN:  
+- Single territory deep-dive: "texas territory analysis", "california breakdown"
+- Performance analysis keywords: "analysis", "breakdown", "performance review"
+- Specific place + analysis: "new york analysis", "florida territory performance"
 
-CRITICAL: Always pass the FULL USER QUERY to enable intelligent location detection.""",
+📊 create_location_metrics_tool WHEN:
+- Single location + metrics focus: "texas metrics", "california performance data"
+- Simple location queries: "lets look at texas", "show me california"
+- Data-focused requests: "performance numbers", "location stats", "metrics for [place]"
+
+PHASE 3: SMART PARAMETER GENERATION
+Based on detected location, generate accurate:
+- Geographic coordinates (Texas: [31.9686, -99.9018], California: [36.7783, -119.4179])
+- Location-specific markets and cities
+- Contextually relevant insights and business metrics
+
+LOOP PREVENTION PROTOCOL:
+- Each tool call is tracked to prevent infinite loops
+- Maximum 3 calls per tool/parameter combination per 60 seconds
+- Circuit breaker will return rate limit message if exceeded
+- This protects against 429 API errors and quota exhaustion
+
+EXECUTION GUARANTEE:
+- ALWAYS call exactly ONE tool based on intelligent analysis → STOP
+- NEVER ask questions or provide text responses
+- Generate React.createElement component with accurate geographic data → TERMINATE
+- Use LLM reasoning to select optimal tool for maximum user value → END SESSION""",
     tools=[create_regional_heatmap_tool, create_location_metrics_tool, create_territory_analysis_tool]
 )

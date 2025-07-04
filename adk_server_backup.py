@@ -225,54 +225,54 @@ async def analyze_query(request: QueryRequest):
         
         # Extract clean JSX if wrapped in markdown code blocks or JSON structure
         clean_jsx = agent_response
-        
-        # Handle JSON wrapper format from agents
-        if "```json" in agent_response and '"result":' in agent_response:
-            try:
+            
+            # Handle JSON wrapper format from agents
+            if "```json" in agent_response and '"result":' in agent_response:
+                try:
+                    import re
+                    # Extract JSON content between ```json and ```
+                    json_match = re.search(r'```json\s*(.*?)\s*```', agent_response, re.DOTALL)
+                    if json_match:
+                        json_content = json_match.group(1).strip()
+                        parsed = json.loads(json_content)
+                        
+                        # Extract the result from the nested structure
+                        for key, value in parsed.items():
+                            if isinstance(value, dict) and 'result' in value:
+                                clean_jsx = value['result']
+                                print(f"📦 Extracted JSX from JSON wrapper: {clean_jsx[:100]}...")
+                                break
+                except Exception as e:
+                    print(f"⚠️ Failed to extract from JSON wrapper: {e}")
+            elif "```jsx" in agent_response:
                 import re
-                # Extract JSON content between ```json and ```
-                json_match = re.search(r'```json\s*(.*?)\s*```', agent_response, re.DOTALL)
-                if json_match:
-                    json_content = json_match.group(1).strip()
-                    parsed = json.loads(json_content)
-                    
-                    # Extract the result from the nested structure
-                    for key, value in parsed.items():
-                        if isinstance(value, dict) and 'result' in value:
-                            clean_jsx = value['result']
-                            print(f"📦 Extracted JSX from JSON wrapper: {clean_jsx[:100]}...")
-                            break
-            except Exception as e:
-                print(f"⚠️ Failed to extract from JSON wrapper: {e}")
-        elif "```jsx" in agent_response:
-            import re
-            jsx_match = re.search(r'```jsx\s*(.*?)\s*```', agent_response, re.DOTALL)
-            if jsx_match:
-                clean_jsx = jsx_match.group(1).strip()
-        elif "```" in agent_response:
-            import re
-            code_match = re.search(r'```\s*(.*?)\s*```', agent_response, re.DOTALL)
-            if code_match:
-                clean_jsx = code_match.group(1).strip()
+                jsx_match = re.search(r'```jsx\s*(.*?)\s*```', agent_response, re.DOTALL)
+                if jsx_match:
+                    clean_jsx = jsx_match.group(1).strip()
+            elif "```" in agent_response:
+                import re
+                code_match = re.search(r'```\s*(.*?)\s*```', agent_response, re.DOTALL)
+                if code_match:
+                    clean_jsx = code_match.group(1).strip()
+            
+            results.append(ComponentResult(
+                agent="generative_ui_orchestrator",
+                component_type=component_type,
+                component_code=clean_jsx,
+                business_context=f"ADK Agent response for: {request.query}"
+            ))
         
-        results.append(ComponentResult(
-            agent="generative_ui_orchestrator",
-            component_type=component_type,
-            component_code=clean_jsx,
-            business_context=f"ADK Agent response for: {request.query}"
-        ))
-    
-    # If no results from agent, provide fallback
-    if not results:
-        results.append(ComponentResult(
-            agent="root_agent",
-            component_type="general_response", 
-            component_code="<div>ADK Agent processed query but no components generated</div>",
-            business_context=f"Agent processed: {request.query}"
-        ))
-    
-    print(f"✅ Generated {len(results)} components via authentic ADK agents")
-    
+        # If no results from agent, provide fallback
+        if not results:
+            results.append(ComponentResult(
+                agent="root_agent",
+                component_type="general_response", 
+                component_code="<div>ADK Agent processed query but no components generated</div>",
+                business_context=f"Agent processed: {request.query}"
+            ))
+        
+        print(f"✅ Generated {len(results)} components via authentic ADK agents")
+        
     return QueryResponse(
         success=True,
         query=request.query,
@@ -288,6 +288,8 @@ async def analyze_query(request: QueryRequest):
         ]
     )
         
+# Error handling removed temporarily for testing
+
 @app.get("/api/agents")
 async def list_agents():
     """List available ADK agents"""

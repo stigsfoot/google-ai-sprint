@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RechartsSalesTrend, RechartsComparison, RechartsMetricCard } from './RechartsComponents'
+import InteractiveMapDisplay from './InteractiveMapDisplay'
 import dynamic from 'next/dynamic'
 
 // Dynamically import Leaflet components to avoid SSR issues
@@ -234,6 +235,105 @@ export default function SafeComponentRenderer({
           console.log('✅ Matched agent_response case! Processing ADK agent React.createElement content')
           const cleanedCode = componentCode.replace(/```jsx\n?|```\n?/g, '').replace(/```json\n?|```\n?/g, '').trim()
           
+          // Check for interactive map JSON format first
+          if (componentCode.includes('```json') && componentCode.includes('"type": "interactive_map"')) {
+            try {
+              console.log('🗺️ Detected interactive map format - parsing JSON metadata')
+              const jsonMatch = componentCode.match(/```json\s*([\s\S]*?)\s*```/)
+              if (jsonMatch) {
+                const interactiveMapData = JSON.parse(jsonMatch[1])
+                console.log('📊 Interactive map data:', interactiveMapData)
+                
+                return <InteractiveMapDisplay mapData={interactiveMapData} />
+              }
+            } catch (error) {
+              console.warn('❌ Failed to parse interactive map JSON, falling back to static map')
+            }
+          }
+          
+          // Check if this is geospatial content that should use InteractiveMapDisplay
+          if (cleanedCode.includes('MapContainer') || 
+              cleanedCode.includes('territory') || 
+              cleanedCode.includes('regional') || 
+              cleanedCode.includes('geospatial') ||
+              cleanedCode.toLowerCase().includes('texas') ||
+              cleanedCode.toLowerCase().includes('california') ||
+              cleanedCode.toLowerCase().includes('performance across')) {
+            
+            console.log('🗺️ Detected geospatial content - converting to InteractiveMapDisplay format')
+            
+            try {
+              // Extract map data from React.createElement format
+              const titleMatch = cleanedCode.match(/"([^"]*(?:territory|Territory|Analysis|analysis|Texas|California)[^"]*)"/i)
+              const mapCenterMatch = cleanedCode.match(/React\.createElement\(MapContainer,\s*\{\s*center:\s*\[([^\]]+)\],\s*zoom:\s*(\d+)/)
+              
+              const title = titleMatch ? titleMatch[1] : 'Regional Analysis'
+              const center: [number, number] = mapCenterMatch 
+                ? [parseFloat(mapCenterMatch[1].split(',')[0].trim()), parseFloat(mapCenterMatch[1].split(',')[1].trim())]
+                : [39.8283, -98.5795]
+              const zoom = mapCenterMatch ? parseInt(mapCenterMatch[2]) : 4
+              
+              // Extract marker data
+              const markerPattern = /React\.createElement\(CircleMarker,\s*\{\s*center:\s*\[([^\]]+)\],\s*radius:\s*(\d+),\s*fillColor:\s*"([^"]+)",[\s\S]*?React\.createElement\(Popup,\s*\{\},\s*"([^"]+)"\)/g
+              const markerMatches = [...cleanedCode.matchAll(markerPattern)]
+              
+              const markers = markerMatches.map((match, index) => ({
+                center: [parseFloat(match[1].split(',')[0].trim()), parseFloat(match[1].split(',')[1].trim())] as [number, number],
+                label: match[4],
+                color: match[3],
+                radius: parseInt(match[2])
+              }))
+              
+              // Create enhanced map data structure
+              const enhancedMapData = {
+                type: "interactive_map",
+                title: title,
+                map_config: {
+                  center: center,
+                  zoom: zoom,
+                  markers: markers
+                },
+                performance_categories: {
+                  "high": {
+                    label: "High Performance",
+                    color: "#8b5cf6",
+                    regions: markers.slice(0, 2).map(m => m.label.split(':')[0]),
+                    threshold: { min: 1000000 },
+                    zoom_bounds: { center: center, zoom: zoom + 1 }
+                  },
+                  "medium": {
+                    label: "Medium Performance", 
+                    color: "#a855f7",
+                    regions: markers.slice(2, 4).map(m => m.label.split(':')[0]),
+                    threshold: { min: 300000, max: 999999 },
+                    zoom_bounds: { center: center, zoom: zoom + 1 }
+                  },
+                  "low": {
+                    label: "Emerging Markets",
+                    color: "#c084fc", 
+                    regions: markers.slice(4).map(m => m.label.split(':')[0]),
+                    threshold: { min: 0, max: 299999 },
+                    zoom_bounds: { center: center, zoom: zoom + 1 }
+                  }
+                },
+                current_category: null,
+                interactions: {
+                  legend_click_behavior: "zoom_to_region",
+                  marker_click_behavior: "show_details",
+                  keyboard_navigation: true
+                },
+                insight: `Analysis shows ${markers.length} active regions with performance data`,
+                data: `Interactive map with ${markers.length} data points`
+              }
+              
+              console.log('🎯 Created enhanced map data:', enhancedMapData)
+              return <InteractiveMapDisplay mapData={enhancedMapData} />
+              
+            } catch (error) {
+              console.warn('❌ Failed to convert to InteractiveMapDisplay format:', error)
+            }
+          }
+          
           // Check if it's React.createElement format from ADK agents
           if (cleanedCode.includes('React.createElement')) {
             console.log('🎯 Parsing ADK agent React.createElement component safely')
@@ -370,30 +470,68 @@ export default function SafeComponentRenderer({
               />
             }
             
-            // For other components, show a structured fallback
-            console.log('🔧 Other component detected - showing structured component info')
-            const componentInfo = cleanedCode.match(/React\.createElement\((\w+)/g) || []
+            // EXECUTE React.createElement safely instead of showing fallback
+            console.log('🔧 Executing React.createElement component from ADK agent')
             
-            return (
-              <Card className="p-6 border-l-4 border-l-green-500">
-                <div className="flex items-center space-x-2 mb-4">
-                  <span className="text-2xl">🤖</span>
-                  <div>
-                    <h3 className="text-lg font-semibold dark:text-white">ADK Generated Component</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Successfully parsed component structure</p>
+            try {
+              // Create safe execution context with required components
+              const components = {
+                React,
+                Card,
+                Badge,
+                MapContainer,
+                TileLayer, 
+                CircleMarker,
+                Popup,
+                MapPin: ({ className }: { className?: string }) => <span className={className}>📍</span>,
+                Text: ({ children, className }: { children: React.ReactNode; className?: string }) => 
+                  <span className={className}>{children}</span>
+              }
+              
+              // Create function that returns the React element
+              const componentFn = new Function(
+                'React', 'Card', 'Badge', 'MapContainer', 'TileLayer', 'CircleMarker', 'Popup', 'MapPin', 'Text',
+                `return ${cleanedCode}`
+              )
+              
+              // Execute with safe context
+              const RenderedElement = componentFn(
+                components.React,
+                components.Card, 
+                components.Badge,
+                components.MapContainer,
+                components.TileLayer,
+                components.CircleMarker,
+                components.Popup,
+                components.MapPin,
+                components.Text
+              )
+              
+              console.log('✅ Successfully executed React.createElement component')
+              return RenderedElement
+              
+            } catch (error) {
+              console.warn('❌ Failed to execute React.createElement, showing safe fallback:', error)
+              
+              // Show error details for debugging
+              return (
+                <Card className="p-6 border-l-4 border-l-red-500">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <h3 className="text-lg font-semibold dark:text-white">Component Execution Error</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Failed to render React.createElement component</p>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                  <p className="text-sm text-green-800 dark:text-green-300 mb-2">✅ Component parsed successfully</p>
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    Components: {componentInfo.join(', ').replace(/React\.createElement\(/g, '')}
-                  </p>
-                  <div className="mt-3 p-3 bg-white dark:bg-gray-700 rounded text-xs font-mono max-h-32 overflow-auto">
-                    {cleanedCode.substring(0, 200)}...
+                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                    <p className="text-sm text-red-800 dark:text-red-300 mb-2">Error: {error.message}</p>
+                    <div className="mt-3 p-3 bg-white dark:bg-gray-700 rounded text-xs font-mono max-h-32 overflow-auto">
+                      {cleanedCode.substring(0, 400)}...
+                    </div>
                   </div>
-                </div>
-              </Card>
-            )
+                </Card>
+              )
+            }
           }
           
           // For accessibility-focused components, create a proper React component

@@ -174,6 +174,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents.geospatial_agent import geospatial_agent
 from agents.accessibility_agent import accessibility_agent
+from agents.dashboard_layout_agent import dashboard_layout_agent
 
 # Create Root Orchestrator Agent with Multi-Agent Delegation
 root_agent = LlmAgent(
@@ -191,12 +192,15 @@ AVAILABLE SPECIALIZED AGENTS:
 - chart_generation_agent: Sales trends, metrics, comparisons, business charts
 - geospatial_agent: Maps, regional data, location-based visualizations with intelligent zoom
 - accessibility_agent: WCAG-compliant components, keyboard navigation
+- dashboard_layout_agent: Complex dashboards, multi-component layouts, business intelligence compositions
 
 INTELLIGENT DELEGATION RULES:
 - Sales, revenue, trends, metrics, KPIs, comparisons → transfer_to_agent(chart_generation_agent)
 - Maps, regional, geographic, territory, location, SPECIFIC PLACES → transfer_to_agent(geospatial_agent)
 - California, Texas, New York, Florida, states, cities → transfer_to_agent(geospatial_agent)
 - Accessibility, WCAG, keyboard, screen reader, high-contrast → transfer_to_agent(accessibility_agent)
+- Dashboard, business intelligence, BI dashboard, comprehensive dashboard → transfer_to_agent(dashboard_layout_agent)
+- Multi-component, layout, composition, complex dashboard → transfer_to_agent(dashboard_layout_agent)
 
 CRITICAL ORCHESTRATION & VALIDATION:
 - ALWAYS use transfer_to_agent() for delegation - never do work yourself
@@ -221,5 +225,5 @@ You: transfer_to_agent(geospatial_agent)
 geospatial_agent: [no specific location, generates US-wide map with all states data]
 Output: React.createElement component with continental US view""",
     tools=[],  # Root agent has no tools - only delegates
-    sub_agents=[chart_generation_agent, geospatial_agent, accessibility_agent]
+    sub_agents=[chart_generation_agent, geospatial_agent, accessibility_agent, dashboard_layout_agent]
 )

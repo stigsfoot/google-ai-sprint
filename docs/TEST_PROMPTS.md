@@ -1,6 +1,219 @@
 # Test Prompts for Generative UI System
 
-This document provides comprehensive test prompts to validate both the **ADK Web UI** and **Frontend Dashboard** functionality.
+This document provides comprehensive test prompts to validate the **multi-agent generative UI system** using curl commands, ADK Web UI, and frontend dashboard tests. Tests are organized from simple single-agent requests to complex multi-agent coordination scenarios.
+
+## 📡 **API Testing with Curl Commands (Postman Compatible)**
+
+### **Postman Collection Setup**
+
+**Base Configuration**
+- **Base URL**: `http://localhost:8081`
+- **Content-Type**: `application/json`
+- **Method**: `POST`
+- **Endpoint**: `/api/analyze`
+
+**Request Body Template**
+```json
+{
+  "query": "{{test_query}}"
+}
+```
+
+**Environment Variables for Postman**
+```json
+{
+  "base_url": "http://localhost:8081",
+  "api_endpoint": "/api/analyze",
+  "content_type": "application/json"
+}
+```
+
+### **Basic Single-Agent Tests**
+
+**Chart Generation Agent**
+```bash
+# Simple sales trend
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "show sales trends"}'
+
+# Revenue metrics
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "revenue metrics"}'
+
+# Product comparison
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "compare product performance"}'
+```
+
+**Geospatial Agent**
+```bash
+# Regional analysis
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "regional performance data"}'
+
+# California-specific map
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "california territory analysis"}'
+
+# New York metrics
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "new york metrics"}'
+```
+
+**Accessibility Agent**
+```bash
+# High contrast charts
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "accessible sales dashboard"}'
+
+# Screen reader table
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "screen reader compatible table"}'
+```
+
+**Dashboard Layout Agent**
+```bash
+# Comprehensive BI dashboard
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "comprehensive business intelligence dashboard"}'
+
+# YTD metrics dashboard
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "YTD metrics dashboard"}'
+
+# Ranking table
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "top performers ranking"}'
+```
+
+### **Multi-Agent Coordination Tests**
+
+```bash
+# Chart + Geospatial coordination
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "regional sales trends with geographic breakdown"}'
+
+# All agents coordination
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "accessible comprehensive business intelligence dashboard"}'
+
+# Complex BI request
+curl -X POST "http://localhost:8081/api/analyze" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "business intelligence dashboard of the data we have"}'
+```
+
+### **Performance Testing Commands**
+
+```bash
+# Rapid fire testing (run these in succession)
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "sales trends"}' &
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "california map"}' &
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "accessible dashboard"}' &
+wait
+```
+
+## 🌐 **ADK Web UI Testing**
+
+Start the ADK Web UI: `adk web agents --port 8080`
+
+### **Simple Agent Tests**
+```
+show sales trends
+revenue metrics
+compare products
+regional performance
+california analysis
+texas metrics
+accessible charts
+high contrast dashboard
+business intelligence dashboard
+YTD metrics
+top performers
+ranking table
+```
+
+### **Location Intelligence Tests**
+```
+california
+texas sales map
+new york territory
+florida breakdown
+seattle metrics
+chicago performance
+west coast analysis
+southeast region
+```
+
+### **Multi-Agent Scenarios**
+```
+comprehensive business intelligence dashboard
+accessible regional sales analysis
+interactive dashboard with maps and charts
+business intelligence dashboard of the data we have
+multi-territory performance dashboard
+accessible geographic sales visualization
+```
+
+### **Edge Case Tests**
+```
+show me data
+business intelligence
+help with visualization
+create dashboard
+xyz undefined query
+```
+
+## 💻 **Frontend Dashboard Testing**
+
+Access the React dashboard at: `http://localhost:3001`
+
+### **Progressive Complexity Tests**
+
+**Level 1: Single Component Generation**
+```
+sales trends
+revenue metrics
+california map
+accessible chart
+```
+
+**Level 2: Enhanced Components**
+```
+quarterly sales trends
+regional performance analysis
+high contrast sales dashboard
+YTD performance metrics
+```
+
+**Level 3: Complex Dashboards**
+```
+business intelligence dashboard
+comprehensive dashboard
+business intelligence dashboard of the data we have
+interactive sales and geographic dashboard
+```
+
+**Level 4: Multi-Agent Coordination**
+```
+accessible comprehensive business intelligence dashboard
+regional sales analysis with interactive maps
+business intelligence dashboard with accessibility features
+comprehensive multi-territory performance dashboard
+```
 
 ## 🎯 **Core Functionality Tests**
 
@@ -331,4 +544,190 @@ Accessibility → accessibility_agent
 - Learning tool calling and component generation
 - Experiencing production-quality generative UI
 
+## 🧪 **Validation & Success Criteria**
+
+### **Expected Response Patterns**
+
+**Single-Agent Responses (2-4 seconds)**
+```json
+{
+  "success": true,
+  "query": "show sales trends",
+  "components": [
+    {
+      "agent": "chart_generation_agent",
+      "component_type": "sales_trend",
+      "component_code": "React.createElement(Card, {...})",
+      "business_context": "Sales trend analysis with Q4 data"
+    }
+  ],
+  "total_components": 1,
+  "processing_time": "2.1s",
+  "agent_trace": ["Root agent delegated to chart_generation_agent"]
+}
+```
+
+**Multi-Agent Responses (3-6 seconds)**
+```json
+{
+  "success": true,
+  "query": "comprehensive business intelligence dashboard",
+  "components": [
+    {
+      "agent": "dashboard_layout_agent",
+      "component_type": "comprehensive_dashboard",
+      "component_code": "React.createElement(\"div\", {...}) // 8000+ chars",
+      "business_context": "Complete BI dashboard with tabs, map, metrics, rankings"
+    }
+  ],
+  "total_components": 1,
+  "processing_time": "3.2s",
+  "agent_trace": ["Delegated to dashboard_layout_agent", "Comprehensive dashboard generated"]
+}
+```
+
+### **Component Validation Checklist**
+
+For each successful response, verify:
+- [ ] **Success Flag**: `"success": true`
+- [ ] **Component Code**: Contains `React.createElement` syntax
+- [ ] **Agent Attribution**: Correct agent name in response
+- [ ] **Business Context**: Meaningful business insight included
+- [ ] **Processing Time**: Within expected ranges (2-6 seconds)
+- [ ] **No Questions**: Agent never asks for clarification
+- [ ] **Professional Styling**: Includes Tailwind CSS classes
+- [ ] **Interactive Elements**: Hover states, transitions, click handlers
+
+### **Multi-Agent Architecture Validation**
+
+**Agent Delegation Patterns**
+```
+"sales trends" → chart_generation_agent
+"california map" → geospatial_agent  
+"accessible dashboard" → accessibility_agent
+"business intelligence dashboard" → dashboard_layout_agent
+"accessible regional analysis" → multi-agent coordination
+```
+
+**Component Integration**
+- Dashboard components include multiple data types
+- Interactive maps with clickable regions
+- Tab navigation between different views
+- YTD metrics with trend indicators
+- Ranking tables with performance data
+
+### **Performance Benchmarks**
+
+| Test Type | Expected Time | Agent(s) | Component Size |
+|-----------|---------------|----------|----------------|
+| Simple Chart | 2-3s | chart_generation_agent | 1-2KB |
+| Regional Map | 3-4s | geospatial_agent | 2-4KB |
+| Accessibility | 2-3s | accessibility_agent | 1-3KB |
+| BI Dashboard | 3-5s | dashboard_layout_agent | 8-12KB |
+| Multi-Agent | 4-6s | Multiple | Variable |
+
+### **Quality Assurance Steps**
+
+1. **Start Services**
+   ```bash
+   # Terminal 1: ADK Server
+   python adk_server.py
+   
+   # Terminal 2: Frontend
+   cd dashboard && npm run dev
+   
+   # Terminal 3: ADK Web UI (optional)
+   adk web agents --port 8080
+   ```
+
+2. **Run Basic Tests**
+   ```bash
+   curl -X POST "http://localhost:8081/api/analyze" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "show sales trends"}'
+   ```
+
+3. **Verify Dashboard Generation**
+   ```bash
+   curl -X POST "http://localhost:8081/api/analyze" \
+     -H "Content-Type: application/json" \
+     -d '{"query": "comprehensive business intelligence dashboard"}'
+   ```
+
+4. **Test Frontend Integration**
+   - Visit `http://localhost:3001`
+   - Enter: "business intelligence dashboard"
+   - Verify dashboard renders with tabs, map, metrics
+
+### **Troubleshooting Common Issues**
+
+**Server Not Starting**
+```bash
+# Check environment
+echo $GOOGLE_API_KEY
+# Check dependencies
+pip install -r requirements.txt
+```
+
+**Agent Import Errors**
+```bash
+# Verify agent structure
+python -c "from agents.generative_ui.agent import root_agent; print(root_agent.name)"
+```
+
+**Frontend Connection Issues**
+```bash
+# Check server health
+curl http://localhost:8081/
+# Verify CORS settings in adk_server.py
+```
+
+**Fixed Issues (v2.0)**
+- ✅ **Default Parameter Error**: Removed all default values from function signatures (Google AI doesn't support them)
+- ✅ **Function Loop Prevention**: Enhanced circuit breaker to prevent infinite tool calling
+- ✅ **Multi-Agent Coordination**: Complex queries like "comprehensive accessible regional sales analysis" now work perfectly
+- ✅ **Performance**: All queries complete in 2-6 seconds without timeouts
+
+## 🎬 **Demo Sequence Recommendations**
+
+### **Quick Demo (5 minutes)**
+```bash
+# 1. Simple chart
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "sales trends"}'
+
+# 2. Geographic focus  
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "california territory analysis"}'
+
+# 3. Comprehensive dashboard
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "business intelligence dashboard"}'
+```
+
+### **Complete Demo (15 minutes)**
+1. **Single Agents**: Show each agent individually
+2. **Multi-Agent**: Demonstrate coordination
+3. **Frontend**: Show React dashboard integration
+4. **ADK Web UI**: Show agent traces and reasoning
+
+### **System Status Verification**
+```bash
+# Health check
+curl http://localhost:8081/
+
+# Agent availability
+curl -X POST "http://localhost:8081/api/analyze" -H "Content-Type: application/json" -d '{"query": "test"}' | jq '.success'
+```
+
+## 📊 **Expected Success Metrics**
+
+- **API Response Rate**: 100% success for valid queries
+- **Response Time**: 95% under 5 seconds
+- **Component Generation**: All responses contain React.createElement code
+- **Agent Delegation**: Correct agent selection for query types
+- **Frontend Integration**: Seamless component rendering
+- **Business Quality**: Professional insights and data visualization
+
 This comprehensive test suite validates the entire system from basic functionality to advanced multi-agent coordination, ensuring both educational value and production-level reliability.
+
+---
+
+**🚀 Ready for Production Demonstration!** Use these tests to validate the complete multi-agent generative UI system across all interfaces and scenarios.

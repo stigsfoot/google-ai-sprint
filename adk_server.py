@@ -212,7 +212,11 @@ async def analyze_query(request: QueryRequest):
         component_type = "agent_response"  # default
         
         # Detect component type based on content
-        if "<Card" in agent_response and "LineChart" in agent_response:
+        if ("Business Intelligence Dashboard" in agent_response or 
+            "Regional Sales" in agent_response and "Department Sales" in agent_response and "Total Cost" in agent_response or
+            "YTD Sales" in agent_response and "Top Performers" in agent_response and "Regional Performance Map" in agent_response):
+            component_type = "comprehensive_dashboard"
+        elif "<Card" in agent_response and "LineChart" in agent_response:
             component_type = "trend_line"
         elif "<Card" in agent_response and "BarChart" in agent_response:
             component_type = "comparison_bar"

@@ -263,7 +263,7 @@ def create_keyboard_nav_dashboard_tool(dashboard_title: str, widget_count: str, 
 # Create Accessibility Agent using authentic ADK patterns
 accessibility_agent = LlmAgent(
     name="accessibility_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Ensures UI components meet accessibility standards and provides WCAG-compliant accessibility improvements.",
     instruction="""You are an accessibility specialist.
 

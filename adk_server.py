@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ADK Agent Server for Frontend Integration
-Exposes real ADK agents via HTTP API for dashboard integration
+Exposes ADK agents via HTTP API for dashboard integration
 """
 import asyncio
 import json
@@ -129,13 +129,30 @@ async def analyze_query(request: QueryRequest):
             # Execute agent using authentic ADK Runner pattern with timeout
             agent_response = ""
             all_responses = []
+            event_count = 0
+            max_events = 5  # Safety limit to prevent infinite loops (further reduced after fix)
             
             async for event in runner.run_async(
                 user_id=user_id,
                 session_id=session_id, 
                 new_message=content
             ):
-                print(f"🔍 Event type: {type(event).__name__}, is_final: {event.is_final_response()}")
+                event_count += 1
+                print(f"🔍 Event #{event_count}: {type(event).__name__}, is_final: {event.is_final_response()}")
+                
+                # Safety break to prevent infinite loops
+                if event_count >= max_events:
+                    print(f"⚠️  Breaking after {max_events} events to prevent infinite loop")
+                    # Use the last meaningful response if we have one
+                    if all_responses:
+                        for response in reversed(all_responses):
+                            if 'React.createElement' in response:
+                                agent_response = response
+                                print(f"🎨 Using last React component before circuit breaker: {agent_response[:100]}...")
+                                break
+                    if not agent_response:
+                        agent_response = "Circuit breaker activated - too many events"
+                    break
                 
                 # Collect all responses during the conversation
                 if hasattr(event, 'content') and event.content:
@@ -211,21 +228,24 @@ async def analyze_query(request: QueryRequest):
         # Try to detect JSX components and determine component type
         component_type = "agent_response"  # default
         
-        # Detect component type based on content
+        # Detect component type based on React.createElement content
         if ("Business Intelligence Dashboard" in agent_response or 
             "Regional Sales" in agent_response and "Department Sales" in agent_response and "Total Cost" in agent_response or
             "YTD Sales" in agent_response and "Top Performers" in agent_response and "Regional Performance Map" in agent_response):
             component_type = "comprehensive_dashboard"
-        elif "<Card" in agent_response and "LineChart" in agent_response:
-            component_type = "trend_line"
-        elif "<Card" in agent_response and "BarChart" in agent_response:
-            component_type = "comparison_bar"
-        elif "<Card" in agent_response and ("metric" in agent_response.lower() or "Badge" in agent_response):
+        elif "Sales Trend" in agent_response and "React.createElement" in agent_response:
+            component_type = "sales_trend"
+        elif ("Metric" in agent_response or "Revenue" in agent_response or "KPI" in agent_response) and "React.createElement" in agent_response:
             component_type = "metric_card"
+        elif ("Comparison" in agent_response or "Product Performance" in agent_response) and "React.createElement" in agent_response:
+            component_type = "comparison_chart"
         elif "MapContainer" in agent_response or "regional" in agent_response.lower():
-            component_type = "agent_response"  # Route to React.createElement execution instead of static map
+            component_type = "regional_heatmap"
         elif "accessibility" in agent_response.lower() or "WCAG" in agent_response or "aria-label" in agent_response:
             component_type = "accessible_dashboard"
+        elif "React.createElement" in agent_response:
+            # Generic React component - let SafeComponentRenderer handle execution
+            component_type = "react_component"
         
         # Extract clean JSX if wrapped in markdown code blocks or JSON structure
         clean_jsx = agent_response

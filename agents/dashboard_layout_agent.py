@@ -1,10 +1,12 @@
 """
 Dashboard Layout Agent - Phase 3.1
 Composes complex layouts by orchestrating multiple specialized agents
+Includes accessibility tools for cross-cutting accessibility features
 """
 
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
+from .accessibility_tools import create_high_contrast_chart_tool, create_screen_reader_table_tool, create_keyboard_nav_dashboard_tool
 
 
 def create_responsive_grid_layout(data_types: str, user_preference: str) -> str:
@@ -550,7 +552,7 @@ def create_component_variants(component_type: str, data_complexity: str) -> str:
 # Create the Dashboard Layout Agent
 dashboard_layout_agent = LlmAgent(
     name="dashboard_layout_agent",
-    model="gemini-2.0-flash-001",
+    model="gemini-2.5-flash",
     instruction="""You are the Dashboard Layout Agent, responsible for creating responsive, well-organized dashboard layouts that compose outputs from multiple specialized agents.
 
 CRITICAL STOPPING RULES (HIGHEST PRIORITY):
@@ -619,6 +621,9 @@ EXECUTION GUARANTEE:
         FunctionTool(create_component_variants),
         FunctionTool(create_comprehensive_business_dashboard),
         FunctionTool(create_ytd_metrics_dashboard),
+        FunctionTool(create_high_contrast_chart_tool),
+        FunctionTool(create_screen_reader_table_tool),
+        FunctionTool(create_keyboard_nav_dashboard_tool),
         FunctionTool(create_ranking_table_component)
     ]
 )

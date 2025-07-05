@@ -445,7 +445,7 @@ def create_territory_analysis_tool(territory: str, analysis_type: str, insights:
 # Create Geospatial Agent using authentic ADK patterns
 geospatial_agent = LlmAgent(
     name="geospatial_agent", 
-    model="gemini-2.0-flash-exp",
+    model="gemini-2.5-flash",
     description="Handles location-based data analysis and geographic visualizations for regional business intelligence.",
     instruction="""You are an INTELLIGENT geospatial specialist with sophisticated query analysis capabilities.
 

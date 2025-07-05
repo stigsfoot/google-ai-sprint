@@ -877,6 +877,68 @@ export default function SafeComponentRenderer({
             </Card>
           )
 
+        case 'react_component':
+        case 'agent_response':
+          // Execute React.createElement directly for generic components
+          console.log('🔧 Executing React.createElement component')
+          try {
+            const cleanedCode = componentCode.replace(/```jsx\n?|```\n?/g, '').replace(/```json\n?|```\n?/g, '').trim()
+            console.log('🧹 Cleaned component code:', cleanedCode.substring(0, 100) + '...')
+            
+            // Create execution context with React and components
+            const executionContext = {
+              React,
+              Card,
+              Badge,
+              MapContainer: isClient ? MapContainer : () => null,
+              TileLayer: isClient ? TileLayer : () => null,
+              CircleMarker: isClient ? CircleMarker : () => null,
+              Popup: isClient ? Popup : () => null
+            }
+            
+            // Execute the React.createElement code
+            const ComponentFunction = new Function(
+              'React', 'Card', 'Badge', 'MapContainer', 'TileLayer', 'CircleMarker', 'Popup',
+              `return ${cleanedCode}`
+            )
+            
+            const GeneratedComponent = ComponentFunction(
+              executionContext.React,
+              executionContext.Card, 
+              executionContext.Badge,
+              executionContext.MapContainer,
+              executionContext.TileLayer,
+              executionContext.CircleMarker,
+              executionContext.Popup
+            )
+            
+            return GeneratedComponent || (
+              <Card className="p-6">
+                <div className="text-center text-gray-500">
+                  Component executed but returned null
+                </div>
+              </Card>
+            )
+          } catch (error) {
+            console.error('❌ Error executing React component:', error)
+            return (
+              <Card className="p-6 border-l-4 border-l-red-500">
+                <div className="text-center">
+                  <div className="text-2xl mb-4">⚠️</div>
+                  <h3 className="text-lg font-semibold text-red-600 mb-2">Component Execution Error</h3>
+                  <p className="text-sm text-red-500 mb-4">
+                    Failed to render React component
+                  </p>
+                  <div className="bg-red-50 p-4 rounded border text-left">
+                    <p className="text-xs text-red-600 font-mono">
+                      Error: {error.message}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )
+          }
+
         default:
           // Fallback component for unknown types
           return (
